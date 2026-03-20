@@ -1,0 +1,1 @@
+Transcribe this Kodava takk audio lesson verbatim in romanized English. Preserve all Kodava words exactly as spoken. Include speaker notes and corrections.
