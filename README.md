@@ -39,9 +39,37 @@ graph TD
     API -->|rejected| RV[review.jsonl]
     S --> BM25
 
-    SRC[source/] -->|build_corpus.py| CRP[data/corpus/]
+    THAKK[anjanpoonacha/thakk] -->|sync_source_files| PROC[data/processed/]
+    PROC -->|ingesters| CRP[data/corpus/]
     CRP --> BM25
 ```
+
+### Data flow
+
+```
+anjanpoonacha/thakk
+├── corpus/                   ← hand-curated seed entries (source of truth)
+│   ├── grammar_rules.jsonl   edit here to add/remove grammar corrections
+│   ├── vocabulary.jsonl
+│   ├── phonemes.jsonl
+│   └── sentences.jsonl
+└── training_data/            ← structured source files
+    ├── conjugations.jsonl
+    ├── grammar_flags.json
+    └── transliteration.json
+        ↓  github_sync.sync_source_files()
+data/processed/               ← local cache of thakk source (gitignored)
+        ↓  build_corpus.py + ingesters
+data/corpus/                  ← generated build output (gitignored)
+    grammar_rules.jsonl           merged from corpus/ + grammar_flags.json + textbook
+    vocabulary.jsonl              merged from corpus/ + vocab tables
+    phonemes.jsonl                merged from corpus/ + phoneme map
+    sentences.jsonl               hand-verified entries preserved across builds
+    review.jsonl                  rejected feedback queue (never overwritten)
+```
+
+**Do not push `data/corpus/` files back to thakk** — they are generated artefacts.
+To make a permanent correction, edit the relevant file in `anjanpoonacha/thakk/corpus/` directly, then run `make corpus` to rebuild locally.
 
 ## Endpoints
 
@@ -67,16 +95,17 @@ curl -X POST http://localhost:8000/feedback \
 
 ## Corpus
 
-| File | Source | Editable |
+All corpus files under `data/corpus/` are **generated** and gitignored. The source of truth is `anjanpoonacha/thakk`.
+
+| Generated file | Built from | How to edit |
 |---|---|---|
-| `data/corpus/vocabulary.jsonl` | `$SOURCE_PATH/audio/vocab_tables/` | via `build_corpus.py` |
-| `data/corpus/grammar_rules.jsonl` | `$SOURCE_PATH/corrections/` | via `build_corpus.py` |
-| `data/corpus/sentences.jsonl` | Native speaker / feedback | direct |
-| `data/corpus/review.jsonl` | Rejected feedback | promote manually |
+| `data/corpus/grammar_rules.jsonl` | `thakk/corpus/grammar_rules.jsonl` + `training_data/grammar_flags.json` + textbook | Edit in thakk, then `make corpus` |
+| `data/corpus/vocabulary.jsonl` | `thakk/corpus/vocabulary.jsonl` + vocab table source files | Edit in thakk, then `make corpus` |
+| `data/corpus/phonemes.jsonl` | `thakk/corpus/phonemes.jsonl` + phoneme map | Edit in thakk, then `make corpus` |
+| `data/corpus/sentences.jsonl` | `thakk/corpus/sentences.jsonl` + feedback approvals | Edit in thakk or via `/feedback` endpoint |
+| `data/corpus/review.jsonl` | Rejected feedback | Promote entries manually to sentences.jsonl |
 
-`SOURCE_PATH` defaults to `../thakk/source` — set it in `.env` if your `thakk` repo is elsewhere.
-
-Rebuild derived corpus after editing source:
+Rebuild after editing source files in thakk:
 ```bash
 make corpus
 ```
