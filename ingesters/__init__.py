@@ -7,8 +7,11 @@ import hashlib
 @dataclass
 class CorpusEntry:
     type: str  # vocabulary | grammar_rule | phoneme | sentence
-    kodava: str  # always romanized Kodava — never Devanagari
+    kodava: str  # always romanized Kodava — never Devanagari or Kannada script
     devanagari: str  # Devanagari rendering, empty string if unknown
+    kannada: (
+        str  # Kannada script rendering, empty string if unknown (model fills on demand)
+    )
     english: str  # English meaning or description
     explanation: str  # word-by-word breakdown or rule detail
     confidence: str  # verified | audio_source | textbook | unverified
@@ -28,6 +31,7 @@ class CorpusEntry:
             "type": self.type,
             "kodava": self.kodava,
             "devanagari": self.devanagari,
+            "kannada": self.kannada,
             "english": self.english,
             "explanation": self.explanation,
             "confidence": self.confidence,

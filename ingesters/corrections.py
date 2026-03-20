@@ -36,6 +36,7 @@ class CorrectionsIngester(BaseIngester):
                         type="grammar_rule",
                         kodava=correct,
                         devanagari="",
+                        kannada="",
                         english=wrong,
                         explanation=explanation,
                         confidence=confidence,

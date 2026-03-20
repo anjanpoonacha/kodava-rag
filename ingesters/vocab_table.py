@@ -36,6 +36,7 @@ class VocabTableIngester(BaseIngester):
                     type="vocabulary",
                     kodava=kodava,
                     devanagari="",
+                    kannada="",
                     english=english,
                     explanation=explanation,
                     confidence="audio_source",

@@ -1,10 +1,11 @@
 import json
 import time
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from core.retriever import search_all, invalidate
 from core.llm import ask
+from core.github_sync import append_corpus_entry
 from config import DATA
 
 app = FastAPI(title="Kodava RAG")
@@ -41,18 +42,17 @@ def feedback(body: Feedback):
         "source": "ui_feedback",
     }
 
-    if body.status in ("approved", "corrected"):
-        path = CORPUS / "sentences.jsonl"
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        invalidate("sentences")
-        return {"saved": True, "collection": "sentences"}
+    try:
+        if body.status in ("approved", "corrected"):
+            append_corpus_entry("corpus/sentences.jsonl", entry)
+            invalidate("sentences")
+            return {"saved": True, "collection": "sentences"}
 
-    elif body.status == "rejected":
-        path = CORPUS / "review.jsonl"
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        return {"saved": True, "collection": "review"}
+        elif body.status == "rejected":
+            append_corpus_entry("corpus/review.jsonl", entry)
+            return {"saved": True, "collection": "review"}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
 
     return {"saved": False, "error": "unknown status"}
 

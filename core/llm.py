@@ -7,9 +7,10 @@ client = anthropic.Anthropic(
     base_url=ANTHROPIC_BASE_URL,
 )
 
-SYSTEM = """Kodava takk language assistant.
-Given retrieved context, help with transliteration (Kodava → Devanagari), 
-grammar rules, and sentence construction.
+SYSTEM = """Kodava takk language assistant for Kannada speakers.
+Given retrieved context, help with transliteration, grammar rules, and sentence construction.
+When a corpus entry has an empty kannada field, render the Kodava form in Kannada script on demand.
+Devanagari renderings are available in context where pre-computed; use them as-is.
 Always flag uncertain sounds with ⚠️, grammar traps with 🔴, stem changes with 🟡."""
 
 

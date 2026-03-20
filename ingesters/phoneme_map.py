@@ -17,6 +17,7 @@ class PhonemeMapIngester(BaseIngester):
             for p in phonemes:
                 kodava = p.get("kodava", "")
                 devanagari = p.get("devanagari", "")
+                kannada = p.get("kannada", "")
                 hint = p.get("hint", "")
                 confidence_raw = p.get("confidence", "⚠️")
                 confidence = "verified" if confidence_raw == "✅" else "unverified"
@@ -27,6 +28,7 @@ class PhonemeMapIngester(BaseIngester):
                         type="phoneme",
                         kodava=kodava,
                         devanagari=devanagari,
+                        kannada=kannada,
                         english=hint,
                         explanation=note,
                         confidence=confidence,
@@ -39,6 +41,7 @@ class PhonemeMapIngester(BaseIngester):
             suffix = rule.get("suffix", "")
             meaning = rule.get("meaning", "")
             devanagari = rule.get("devanagari", "")
+            kannada = rule.get("kannada", "")
             example = rule.get("example", {})
             confidence_raw = rule.get("confidence", "⚠️")
             confidence = "verified" if confidence_raw == "✅" else "unverified"
@@ -54,6 +57,7 @@ class PhonemeMapIngester(BaseIngester):
                     type="phoneme",
                     kodava=suffix,
                     devanagari=devanagari,
+                    kannada=kannada,
                     english=meaning,
                     explanation=explanation.strip(),
                     confidence=confidence,

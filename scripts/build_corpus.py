@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Factory — walks data/processed/, runs matching ingester, writes corpus JSONL."""
+"""Factory — syncs source files from thakk, then walks data/processed/ and writes corpus JSONL."""
 
 import json
 import sys
@@ -9,6 +9,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
 from config import DATA
+from core.github_sync import sync_source_files
 import ingesters.vocab_table  # noqa: F401 — registers VocabTableIngester
 import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
 import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
@@ -27,6 +28,9 @@ COLLECTIONS = {
 
 
 def build():
+    print("Syncing source files from anjanpoonacha/thakk...")
+    sync_source_files()
+    print("Building corpus...")
     buckets: dict[str, list[dict]] = {k: [] for k in COLLECTIONS}
     seen: set[str] = set()
     warnings = 0
@@ -79,5 +83,4 @@ def build():
 
 
 if __name__ == "__main__":
-    print("Building corpus...")
     build()
