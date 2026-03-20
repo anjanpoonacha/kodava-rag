@@ -62,7 +62,7 @@ def search(query: str, collection: str = "sentences") -> list[dict]:
 
 def search_all(query: str) -> list[dict]:
     results = []
-    for col in ("vocabulary", "sentences", "grammar_rules"):
+    for col in ("vocabulary", "sentences", "grammar_rules", "phonemes"):
         try:
             results.extend(search(query, col))
         except FileNotFoundError:

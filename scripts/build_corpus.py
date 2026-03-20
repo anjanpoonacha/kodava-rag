@@ -1,100 +1,83 @@
 #!/usr/bin/env python3
-"""Compiles source/ → data/corpus/*.jsonl"""
+"""Factory — walks data/processed/, runs matching ingester, writes corpus JSONL."""
 
-import json, re
+import json
+import sys
 from pathlib import Path
-from config import SOURCE, DATA
 
-OUT = DATA / "corpus"
-OUT.mkdir(parents=True, exist_ok=True)
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
+
+from config import DATA
+import ingesters.vocab_table  # noqa: F401 — registers VocabTableIngester
+import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
+import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
+from ingesters import REGISTRY
+
+PROCESSED = DATA / "processed"
+CORPUS = DATA / "corpus"
+CORPUS.mkdir(parents=True, exist_ok=True)
+
+# Collections the factory writes — keyed by CorpusEntry.type
+COLLECTIONS = {
+    "vocabulary": CORPUS / "vocabulary.jsonl",
+    "grammar_rule": CORPUS / "grammar_rules.jsonl",
+    "phoneme": CORPUS / "phonemes.jsonl",
+}
 
 
-def write(name, entries):
-    p = OUT / f"{name}.jsonl"
-    with open(p, "w", encoding="utf-8") as f:
-        for e in entries:
-            f.write(json.dumps(e, ensure_ascii=False) + "\n")
-    print(f"  {name}.jsonl: {len(entries)}")
+def build():
+    buckets: dict[str, list[dict]] = {k: [] for k in COLLECTIONS}
+    seen: set[str] = set()
+    warnings = 0
 
-
-def build_grammar_rules():
-    f = SOURCE / "corrections" / "kodava_corrections.md"
-    if not f.exists():
-        return []
-    text = f.read_text(encoding="utf-8")
-    entries = []
-    # Each rule block starts with "- WHAT:" and ends before the next "- WHAT:" or a heading
-    blocks = re.split(r"\n- WHAT:", text)
-    for i, block in enumerate(blocks[1:], 1):
-        lines = block.strip().splitlines()
-        wrong = lines[0].strip()
-        correct = ""
-        why = ""
-        note = ""
-        for line in lines[1:]:
-            line = line.strip()
-            if line.startswith("- CORRECT:"):
-                correct = line[len("- CORRECT:") :].strip()
-            elif line.startswith("- WHY:"):
-                why = line[len("- WHY:") :].strip()
-            elif line.startswith("- NOTE:"):
-                note = line[len("- NOTE:") :].strip()
-            elif line.startswith("- DEVANAGARI:"):
-                note = line[len("- DEVANAGARI:") :].strip()
-        # Skip entries with no usable content
-        if not wrong:
+    for path in sorted(PROCESSED.rglob("*")):
+        if not path.is_file():
             continue
-        # Build searchable text from all fields
-        searchable = " ".join(filter(None, [wrong, correct, why, note]))
-        entries.append(
-            {
-                "id": f"r{i:03d}",
-                "type": "grammar_rule",
-                "wrong": wrong,
-                "correct": correct,
-                "why": why,
-                "note": note,
-                "text": searchable,  # BM25 indexes this
-                "source": "corrections.md",
-            }
-        )
-    return entries
-
-
-def build_vocabulary():
-    entries = []
-    for md in (SOURCE / "audio" / "vocab_tables").glob("*.md"):
-        rows = re.findall(
-            r"\|\s*([^\|]{3,40})\s*\|\s*([^\|]{3,60})\s*\|\s*([^\|]*)\s*\|",
-            md.read_text(),
-        )
-        for i, (en, ko, ex) in enumerate(rows):
-            if en.strip().lower() in ("english", "---", "") or "-" in en[:3]:
+        for ingester in REGISTRY:
+            if not ingester.can_handle(path):
                 continue
-            entries.append(
-                {
-                    "id": f"v_{md.stem}_{i:03d}",
-                    "type": "vocabulary",
-                    "english": en.strip(),
-                    "kodava": ko.strip(),
-                    "explanation": ex.strip(),
-                    "source": md.name,
-                }
-            )
-    return entries
+            entries = ingester.ingest(path)
+            for entry in entries:
+                # Validation: kodava must be romanized (no Devanagari)
+                if any("\u0900" <= ch <= "\u097f" for ch in entry.kodava):
+                    print(
+                        f"  WARN: Devanagari in kodava field — {path.name}: {entry.kodava[:40]}"
+                    )
+                    warnings += 1
+                    continue
+
+                # Deduplication by deterministic id
+                if entry.id in seen:
+                    continue
+                seen.add(entry.id)
+
+                if entry.type in buckets:
+                    buckets[entry.type].append(entry.to_dict())
+            break  # only first matching ingester per file
+
+    # Write collections
+    for col_type, out_path in COLLECTIONS.items():
+        entries = buckets[col_type]
+        with open(out_path, "w", encoding="utf-8") as f:
+            for e in entries:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
+        print(f"  {out_path.name}: {len(entries)}")
+
+    # Preserve sentences.jsonl and review.jsonl — never overwritten
+    for name in ("sentences.jsonl", "review.jsonl"):
+        p = CORPUS / name
+        if not p.exists():
+            p.touch()
+
+    count = sum(len(v) for v in buckets.values())
+    print(f"  total: {count} entries, {warnings} warnings")
+    if warnings:
+        print(f"  WARNING: {warnings} entries skipped — fix source data")
+    else:
+        print("  OK: 0 errors")
 
 
 if __name__ == "__main__":
     print("Building corpus...")
-    write("vocabulary", build_vocabulary())
-    write("grammar_rules", build_grammar_rules())
-    sentences_path = OUT / "sentences.jsonl"
-    if not sentences_path.exists():
-        sentences_path.touch()
-        print("  sentences.jsonl: 0 (created)")
-    else:
-        count = sum(
-            1 for line in sentences_path.read_text().splitlines() if line.strip()
-        )
-        print(f"  sentences.jsonl: {count} (preserved)")
-    print("Done.")
+    build()

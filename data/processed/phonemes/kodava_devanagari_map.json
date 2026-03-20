@@ -1,0 +1,258 @@
+{
+  "version": "1.0",
+  "validated_by": "native_speaker",
+  "description": "Kodava takk phoneme to Marathi Devanagari mapping with pronunciation hints and confidence flags",
+  "flags": {
+    "✅": "Confident — correct mapping, native speaker validated",
+    "⚠️": "Approximate — no clean Devanagari equivalent, use hint",
+    "🔴": "Grammar trap — common mistake, model must warn",
+    "🟡": "Stem change or variation — unpredictable, flag for validation"
+  },
+  "phonemes": {
+    "vowels": [
+      { "kodava": "a",   "devanagari": "अ",  "hint": "like 'u' in country, bus, plum",            "confidence": "✅", "type": "vowel_short" },
+      { "kodava": "aa",  "devanagari": "आ",  "hint": "like 'o' in honest, oddly, commodity",       "confidence": "✅", "type": "vowel_long" },
+      { "kodava": "e",   "devanagari": "ए",  "hint": "like 'e' in enter, egg, wedding",            "confidence": "✅", "type": "vowel_short" },
+      { "kodava": "ea",  "devanagari": "ए",  "hint": "like 'a' in make, wait — hold slightly longer", "confidence": "⚠️", "type": "vowel_long", "note": "same Devanagari as e, elongated" },
+      { "kodava": "i",   "devanagari": "इ",  "hint": "like 'i' in itchy, wit, hidden",             "confidence": "✅", "type": "vowel_short" },
+      { "kodava": "ii",  "devanagari": "ई",  "hint": "like 'ee' in seek, teeth, weed",             "confidence": "✅", "type": "vowel_long" },
+      { "kodava": "ê",   "devanagari": "ॅ",  "hint": "like 'a' in about, assume — weak schwa",     "confidence": "⚠️", "type": "vowel_schwa", "note": "no clean Devanagari equivalent" },
+      { "kodava": "êê",  "devanagari": "ऍ",  "hint": "like vowel in shirt, her, burn — drop the r", "confidence": "⚠️", "type": "vowel_mid", "note": "no clean Devanagari equivalent" },
+      { "kodava": "o",   "devanagari": "ओ",  "hint": "like 'a' in water (Long Island accent)",     "confidence": "✅", "type": "vowel_short" },
+      { "kodava": "oa",  "devanagari": "ओ",  "hint": "like 'o' in ownership, loan — hold longer",  "confidence": "⚠️", "type": "vowel_long", "note": "same Devanagari as o, elongated" },
+      { "kodava": "u",   "devanagari": "उ",  "hint": "like 'oo' in good, put, could",              "confidence": "✅", "type": "vowel_short" },
+      { "kodava": "uu",  "devanagari": "ऊ",  "hint": "like 'oo' in oops, pool, crouton",           "confidence": "✅", "type": "vowel_long" },
+      { "kodava": "ãã",  "devanagari": "आं", "hint": "nasalized aa — like Portuguese coração",     "confidence": "⚠️", "type": "vowel_nasal", "note": "Devanagari anusvara is approximate" },
+      { "kodava": "ĩĩ",  "devanagari": "ईं", "hint": "nasalized ii — say 'keen to' very fast",     "confidence": "⚠️", "type": "vowel_nasal", "note": "Devanagari anusvara is approximate" }
+    ],
+    "consonants": [
+      { "kodava": "k",  "devanagari": "क",  "hint": "like 'c' in cut, cool, thicket",             "confidence": "✅", "type": "consonant" },
+      { "kodava": "g",  "devanagari": "ग",  "hint": "like 'g' in get, program, yoga",             "confidence": "✅", "type": "consonant" },
+      { "kodava": "ch", "devanagari": "च",  "hint": "like 'ch' in chin, kitchen, watch",          "confidence": "✅", "type": "consonant" },
+      { "kodava": "j",  "devanagari": "ज",  "hint": "like 'j' in jaw, image, pigeon",             "confidence": "✅", "type": "consonant" },
+      { "kodava": "th", "devanagari": "त",  "hint": "like 't' in Spanish gato, Hindi taal — dental t", "confidence": "✅", "type": "consonant", "flag": "🔴 NOT थ — dental t only, tongue touches upper teeth" },
+      { "kodava": "dh", "devanagari": "द",  "hint": "like 'd' in Spanish dos, Hindi do — dental d", "confidence": "✅", "type": "consonant", "flag": "🔴 NOT ध — dental d only, tongue touches upper teeth" },
+      { "kodava": "s",  "devanagari": "स",  "hint": "like 's' in some, fussy",                    "confidence": "✅", "type": "consonant" },
+      { "kodava": "n",  "devanagari": "न",  "hint": "like 'n' in net, winner, pin",               "confidence": "✅", "type": "consonant" },
+      { "kodava": "l",  "devanagari": "ल",  "hint": "like 'l' in long, wilted, coal",             "confidence": "✅", "type": "consonant" },
+      { "kodava": "m",  "devanagari": "म",  "hint": "like 'm' in mouse, immediately, plum",       "confidence": "✅", "type": "consonant" },
+      { "kodava": "b",  "devanagari": "ब",  "hint": "like 'b' in boar, bulb",                     "confidence": "✅", "type": "consonant" },
+      { "kodava": "p",  "devanagari": "प",  "hint": "like 'p' in port, pumpkin",                  "confidence": "✅", "type": "consonant" },
+      { "kodava": "h",  "devanagari": "ह",  "hint": "like 'h' in house, Ohio",                    "confidence": "✅", "type": "consonant" },
+      { "kodava": "r",  "devanagari": "र",  "hint": "like American 'water', Spanish toro — flapped r", "confidence": "✅", "type": "consonant" },
+      { "kodava": "y",  "devanagari": "य",  "hint": "like 'y' in mayo",                           "confidence": "✅", "type": "consonant" },
+      { "kodava": "w",  "devanagari": "व",  "hint": "like 'w' in water",                          "confidence": "✅", "type": "consonant" }
+    ],
+    "retroflex_consonants": [
+      { "kodava": "ṭ",  "devanagari": "ट",  "hint": "retroflex t — curl tongue back, underside touches roof", "confidence": "✅", "type": "retroflex" },
+      { "kodava": "ḍ",  "devanagari": "ड",  "hint": "retroflex d — curl tongue back",             "confidence": "✅", "type": "retroflex" },
+      { "kodava": "Ṇ",  "devanagari": "ण",  "hint": "retroflex n — curl tongue back",             "confidence": "✅", "type": "retroflex" },
+      { "kodava": "Ḷ",  "devanagari": "ळ",  "hint": "retroflex L — curl tongue back, Marathi has this naturally", "confidence": "✅", "type": "retroflex" }
+    ],
+    "geminate_consonants": [
+      { "kodava": "kk",   "devanagari": "क्क", "hint": "double k — hold twice as long, like 'pick kittens'", "confidence": "✅", "type": "geminate" },
+      { "kodava": "gg",   "devanagari": "ग्ग", "hint": "double g — hold twice as long",           "confidence": "✅", "type": "geminate" },
+      { "kodava": "chch", "devanagari": "च्च", "hint": "double ch — hold twice as long",          "confidence": "✅", "type": "geminate" },
+      { "kodava": "jj",   "devanagari": "ज्ज", "hint": "double j — hold twice as long",           "confidence": "✅", "type": "geminate" },
+      { "kodava": "thth", "devanagari": "त्त", "hint": "double dental t — hold twice as long",    "confidence": "✅", "type": "geminate" },
+      { "kodava": "dhdh", "devanagari": "द्द", "hint": "double dental d — hold twice as long",    "confidence": "✅", "type": "geminate" },
+      { "kodava": "nn",   "devanagari": "न्न", "hint": "double n — hold twice as long",           "confidence": "✅", "type": "geminate" },
+      { "kodava": "mm",   "devanagari": "म्म", "hint": "double m — hold twice as long",           "confidence": "✅", "type": "geminate" },
+      { "kodava": "ll",   "devanagari": "ल्ल", "hint": "double l — hold twice as long, like 'wall lighting'", "confidence": "✅", "type": "geminate" },
+      { "kodava": "LL",   "devanagari": "ळ्ळ", "hint": "double retroflex L — hold twice as long", "confidence": "✅", "type": "geminate" }
+    ]
+  },
+  "suffix_rules": [
+    {
+      "suffix": "'k",
+      "meaning": "to / toward (dative case)",
+      "devanagari": "क",
+      "confidence": "✅",
+      "example": { "kodava": "mane'k", "devanagari": "मानेक", "meaning": "to the house" }
+    },
+    {
+      "suffix": "'l",
+      "meaning": "in / on / at (locative case)",
+      "devanagari": "ल",
+      "confidence": "✅",
+      "flag": "🟡 noun ending in 'a' changes to 'ath before this suffix",
+      "example": { "kodava": "kelsath'l", "devanagari": "केल्सथ्ल", "meaning": "at work" }
+    },
+    {
+      "suffix": "'nja",
+      "meaning": "from (ablative case)",
+      "devanagari": "न्ज",
+      "confidence": "⚠️",
+      "note": "ञ्ज technically correct but न्ज more readable to Marathi eye",
+      "example": { "kodava": "mane'nja", "devanagari": "मानेन्ज", "meaning": "from the house" }
+    },
+    {
+      "suffix": "'ra",
+      "meaning": "of (genitive case)",
+      "devanagari": "र",
+      "confidence": "✅",
+      "flag": "🔴 NEVER use 'da for genitive — always 'ra. EXCEPTION: naada (my) is correct, do not change to naara",
+      "flag2": "🟡 noun ending in 'a' changes to 'ath before this suffix",
+      "example": { "kodava": "kelsath'ra", "devanagari": "केल्सथ्र", "meaning": "of work" }
+    },
+    {
+      "suffix": "'ella",
+      "meaning": "all / everything (of things)",
+      "devanagari": "एल्ल",
+      "confidence": "⚠️",
+      "example": { "kodava": "adh'ella", "devanagari": "अद्एल्ल", "meaning": "all of those" }
+    },
+    {
+      "suffix": "'ellaar",
+      "meaning": "all (of people)",
+      "devanagari": "एल्लार",
+      "confidence": "⚠️",
+      "example": { "kodava": "nang'ellaar", "devanagari": "नंगेल्लार", "meaning": "all of us" }
+    },
+    {
+      "suffix": "'aa",
+      "meaning": "question marker",
+      "devanagari": "आ",
+      "confidence": "✅",
+      "example": { "kodava": "mane'aa?", "devanagari": "मानेआ?", "meaning": "is it the house?" }
+    },
+    {
+      "suffix": "'Nda",
+      "meaning": "of (genitive for pronouns)",
+      "devanagari": "ण्ड",
+      "confidence": "⚠️",
+      "example": { "kodava": "āāwuNda", "devanagari": "आंवुण्ड", "meaning": "his" }
+    }
+  ],
+  "stem_change_rules": [
+    {
+      "rule": "noun_ends_in_a",
+      "description": "Nouns ending in 'a' replace the final 'a' with 'ath' before any suffix",
+      "transform": "X + a → X + ath + suffix",
+      "confidence": "✅",
+      "flag": "🟡",
+      "examples": [
+        { "noun": "kelsa",   "suffix": "'l",  "result": "kelsath'l" },
+        { "noun": "kelsa",   "suffix": "'ra", "result": "kelsath'ra" },
+        { "noun": "thinga",  "suffix": "'l",  "result": "thingath'l" },
+        { "noun": "thinga",  "suffix": "'ra", "result": "thingath'ra" },
+        { "noun": "kaala",   "suffix": "'l",  "result": "kaalath'l" },
+        { "noun": "kaala",   "suffix": "'ra", "result": "kaalath'ra" },
+        { "noun": "polaaka", "suffix": "'l",  "result": "polaakath'l" },
+        { "noun": "majjana", "suffix": "'l",  "result": "majjanath'l" },
+        { "noun": "nimsha",  "suffix": "'ra", "result": "nimsath'ra" },
+        { "noun": "waara",   "suffix": "'l",  "result": "waarath'l" },
+        { "noun": "dhivsa",  "suffix": "'l",  "result": "dhivsath'l" }
+      ]
+    },
+    {
+      "rule": "noun_ends_in_e_or_consonant",
+      "description": "Nouns ending in 'e' or a consonant attach suffix directly — no stem change",
+      "transform": "X + suffix directly",
+      "confidence": "✅",
+      "examples": [
+        { "noun": "mane",  "suffix": "'l",  "result": "mane'l" },
+        { "noun": "mane",  "suffix": "'ra", "result": "mane'ra" },
+        { "noun": "raste", "suffix": "'l",  "result": "raste'l" },
+        { "noun": "bayt",  "suffix": "'l",  "result": "bayt'l" },
+        { "noun": "uur",   "suffix": "'ra", "result": "uur'ra" }
+      ]
+    }
+  ],
+  "verb_rules": {
+    "person_endings": {
+      "description": "Nonpast tense person endings — applied to verb stem",
+      "endings": [
+        { "person": "naa",   "ending": "-ii",   "example": "maaduwii" },
+        { "person": "nii",   "ending": "-iiya",  "example": "maaduwiiya" },
+        { "person": "āāwu",  "ending": "-a",    "example": "maaduwa" },
+        { "person": "nanga", "ending": "-a",    "example": "maaduwa" },
+        { "person": "ninga", "ending": "-iiraa", "example": "maaduwiiraa" },
+        { "person": "ainga", "ending": "-a",    "example": "maaduwa" }
+      ]
+    },
+    "past_tense": [
+      {
+        "rule": "regular_uw'k",
+        "description": "Regular verbs ending in -uw'k: drop -uw'k, add -nê",
+        "transform": "drop -uw'k + add -nê",
+        "confidence": "✅",
+        "flag": "⚠️ past tense marker ê = schwa sound, like 'a' in about",
+        "examples": [
+          { "infinitive": "maaduw'k", "past": "maadunê",  "meaning": "did/made" },
+          { "infinitive": "noatuw'k", "past": "noatunê",  "meaning": "looked" },
+          { "infinitive": "waruw'k",  "past": "warunê",   "meaning": "slept" },
+          { "infinitive": "pottuw'k", "past": "pottunê",  "meaning": "broke" },
+          { "infinitive": "kaakuw'k", "past": "kaakunê",  "meaning": "called" },
+          { "infinitive": "muttuw'k", "past": "muttunê",  "meaning": "touched" },
+          { "infinitive": "poyyuw'k", "past": "pojjê",    "meaning": "hit", "note": "🟡 yy→jj stem change" }
+        ]
+      },
+      {
+        "rule": "irregular_p'k_b'k",
+        "description": "Irregular verbs ending in -p'k or -b'k: stem changes + add -ê",
+        "transform": "stem change + ê",
+        "confidence": "✅",
+        "flag": "🟡 stem change is unpredictable — learn individually",
+        "examples": [
+          { "infinitive": "bapp'k",  "past": "bandhê",   "meaning": "came" },
+          { "infinitive": "poap'k",  "past": "poanê",    "meaning": "went" },
+          { "infinitive": "thimb'k", "past": "thindhê",  "meaning": "ate" },
+          { "infinitive": "kêêp'k",  "past": "kêêtê",    "meaning": "asked/listened" },
+          { "infinitive": "kodp'k",  "past": "kodthê",   "meaning": "gave" },
+          { "infinitive": "êdp'k",   "past": "êdthê",    "meaning": "took" },
+          { "infinitive": "kudip'k", "past": "kudichê",  "meaning": "drank" },
+          { "infinitive": "padip'k", "past": "padichê",  "meaning": "learned" },
+          { "infinitive": "wolip'k", "past": "wolichê",  "meaning": "washed" },
+          { "infinitive": "aap'k",   "past": "aachê",    "meaning": "happened" },
+          { "infinitive": "ipp'k",   "past": "injê",     "meaning": "was (1st person)" },
+          { "infinitive": "ipp'k",   "past": "injathê",  "meaning": "was (3rd person)" },
+          { "infinitive": "buduwu'k","past": "buttandhê","meaning": "stopped/left behind", "note": "🟡 also heard as buttuw'k — variation" }
+        ]
+      }
+    ],
+    "progressive": {
+      "description": "Progressive particle: ongoing action. Attach to ipp'k conjugation.",
+      "rule_regular": "drop -uw'k + add -iyand (or -and if verb ends in -yuw'k)",
+      "rule_irregular": "stem change + and/iyand/chand — learn individually",
+      "flag": "🟡 irregular progressive stems unpredictable",
+      "examples": [
+        { "infinitive": "maaduw'k",      "progressive": "maadiyand",    "type": "regular" },
+        { "infinitive": "noatuw'k",      "progressive": "noatiyand",    "type": "regular" },
+        { "infinitive": "waruw'k",       "progressive": "wariyand",     "type": "regular" },
+        { "infinitive": "pottuw'k",      "progressive": "pottiyand",    "type": "regular" },
+        { "infinitive": "thakk pariyuw'k","progressive": "thakk pariyand","type": "regular" },
+        { "infinitive": "poyyuw'k",      "progressive": "pojjiyand",    "type": "regular", "note": "🟡 yy→jj stem change" },
+        { "infinitive": "bapp'k",        "progressive": "bandhand",     "type": "irregular" },
+        { "infinitive": "poap'k",        "progressive": "poayand",      "type": "irregular" },
+        { "infinitive": "thimb'k",       "progressive": "thindhand",    "type": "irregular" },
+        { "infinitive": "kêêp'k",        "progressive": "kêêtiyand",    "type": "irregular" },
+        { "infinitive": "kodp'k",        "progressive": "kodthand",     "type": "irregular" },
+        { "infinitive": "êdp'k",         "progressive": "êdthand",      "type": "irregular" },
+        { "infinitive": "kudip'k",       "progressive": "kudichand",    "type": "irregular" },
+        { "infinitive": "padip'k",       "progressive": "padichand",    "type": "irregular" },
+        { "infinitive": "pudip'k",       "progressive": "pudichand",    "type": "irregular" },
+        { "infinitive": "aap'k",         "progressive": "aayand",       "type": "irregular" },
+        { "infinitive": "ipp'k",         "progressive": "injand",       "type": "irregular" },
+        { "infinitive": "kaamb'k",       "progressive": "kandhand",     "type": "irregular" },
+        { "infinitive": "buduwu'k",      "progressive": "buttiyand",    "type": "irregular" }
+      ]
+    },
+    "compound_verbs": {
+      "rule": "Conjugate the LAST verb only — first part stays unchanged",
+      "examples": [
+        { "infinitive": "êdthan bapp'k", "past": "êdthan bandhê",   "progressive": "êdthan bandhand" },
+        { "infinitive": "susth aap'k",   "past": "susth aachê",     "progressive": "susth aayand" },
+        { "infinitive": "thakk pariyuw'k","past": "thakk pariyunê", "progressive": "thakk pariyand" }
+      ]
+    },
+    "textbook_errors": [
+      {
+        "flag": "🔴",
+        "wrong": "buttuw'k",
+        "correct": "buduwu'k",
+        "note": "buttuw'k may also be valid variation — 🟡 flag in context"
+      }
+    ]
+  }
+}

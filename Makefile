@@ -1,4 +1,4 @@
-.PHONY: install corpus query api
+.PHONY: install corpus query api process
 
 install:
 	pip install -r requirements.txt
@@ -7,8 +7,12 @@ install:
 corpus:
 	python scripts/build_corpus.py
 
+process:
+	python scripts/process_transcription.py $(FILE)
+
 query:
 	python query.py $(ARGS)
 
 api:
 	python3 -m uvicorn api.app:app --reload
+
