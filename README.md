@@ -69,10 +69,12 @@ curl -X POST http://localhost:8000/feedback \
 
 | File | Source | Editable |
 |---|---|---|
-| `data/corpus/vocabulary.jsonl` | `source/audio/vocab_tables/` | via `build_corpus.py` |
-| `data/corpus/grammar_rules.jsonl` | `source/corrections/` | via `build_corpus.py` |
+| `data/corpus/vocabulary.jsonl` | `$SOURCE_PATH/audio/vocab_tables/` | via `build_corpus.py` |
+| `data/corpus/grammar_rules.jsonl` | `$SOURCE_PATH/corrections/` | via `build_corpus.py` |
 | `data/corpus/sentences.jsonl` | Native speaker / feedback | direct |
 | `data/corpus/review.jsonl` | Rejected feedback | promote manually |
+
+`SOURCE_PATH` defaults to `../thakk/source` — set it in `.env` if your `thakk` repo is elsewhere.
 
 Rebuild derived corpus after editing source:
 ```bash
