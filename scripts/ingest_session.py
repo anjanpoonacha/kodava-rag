@@ -128,7 +128,7 @@ def transcribe_audio(audio_path: Path, transcription_path: Path) -> None:
 def ingest(url: str, name: str, dry_run: bool = False) -> None:
     audio_dir = DATA / "raw" / "audio"
     transcription_dir = DATA / "raw" / "transcriptions"
-    vocab_dir = ROOT / "audio-vocab"
+    vocab_dir = Path("/tmp") / "kodava_vocab"
 
     audio_path = audio_dir / f"{name}.mp3"
     transcription_path = transcription_dir / f"{name}_transcription.txt"
