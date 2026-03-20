@@ -1,0 +1,9 @@
+anthropic
+fastapi
+uvicorn[standard]
+rank-bm25
+pydantic
+python-dotenv
+# Phase 2 (uncomment when needed):
+# sentence-transformers
+# lancedb
