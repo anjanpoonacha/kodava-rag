@@ -23,15 +23,38 @@ def build_grammar_rules():
         return []
     text = f.read_text(encoding="utf-8")
     entries = []
+    # Each rule block starts with "- WHAT:" and ends before the next "- WHAT:" or a heading
     blocks = re.split(r"\n- WHAT:", text)
-    for i, b in enumerate(blocks[1:], 1):
-        correct = re.search(r"- CORRECT:\s*(.+)", b)
+    for i, block in enumerate(blocks[1:], 1):
+        lines = block.strip().splitlines()
+        wrong = lines[0].strip()
+        correct = ""
+        why = ""
+        note = ""
+        for line in lines[1:]:
+            line = line.strip()
+            if line.startswith("- CORRECT:"):
+                correct = line[len("- CORRECT:") :].strip()
+            elif line.startswith("- WHY:"):
+                why = line[len("- WHY:") :].strip()
+            elif line.startswith("- NOTE:"):
+                note = line[len("- NOTE:") :].strip()
+            elif line.startswith("- DEVANAGARI:"):
+                note = line[len("- DEVANAGARI:") :].strip()
+        # Skip entries with no usable content
+        if not wrong:
+            continue
+        # Build searchable text from all fields
+        searchable = " ".join(filter(None, [wrong, correct, why, note]))
         entries.append(
             {
                 "id": f"r{i:03d}",
                 "type": "grammar_rule",
-                "wrong": b.split("\n")[0].strip(),
-                "correct": correct.group(1).strip() if correct else "",
+                "wrong": wrong,
+                "correct": correct,
+                "why": why,
+                "note": note,
+                "text": searchable,  # BM25 indexes this
                 "source": "corrections.md",
             }
         )

@@ -1,8 +1,11 @@
 import anthropic
 import json
-from config import ANTHROPIC_API_KEY, MODEL
+from config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, MODEL
 
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+client = anthropic.Anthropic(
+    api_key=ANTHROPIC_API_KEY,
+    base_url=ANTHROPIC_BASE_URL,
+)
 
 SYSTEM = """Kodava takk language assistant.
 Given retrieved context, help with transliteration (Kodava → Devanagari), 

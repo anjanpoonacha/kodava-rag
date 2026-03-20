@@ -11,4 +11,4 @@ query:
 	python query.py $(ARGS)
 
 api:
-	uvicorn api.app:app --reload
+	python3 -m uvicorn api.app:app --reload

@@ -19,7 +19,21 @@ def _load(collection: str):
         _indexes[collection] = (None, [])
         return _indexes[collection]
     tokenized = [
-        d.get("kodava", d.get("correct", d.get("english", ""))).lower().split()
+        " ".join(
+            filter(
+                None,
+                [
+                    d.get("text", ""),  # pre-built searchable field (grammar_rules)
+                    d.get("kodava", ""),
+                    d.get("english", ""),
+                    d.get("correct", ""),
+                    d.get("wrong", ""),
+                    d.get("explanation", ""),
+                ],
+            )
+        )
+        .lower()
+        .split()
         for d in docs
     ]
     tokenized = [t if t else ["_"] for t in tokenized]

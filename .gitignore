@@ -1,6 +1,4 @@
 data/*.db
-data/corpus/vocabulary.jsonl
-data/corpus/grammar_rules.jsonl
 __pycache__/
 .env
 *.pyc
