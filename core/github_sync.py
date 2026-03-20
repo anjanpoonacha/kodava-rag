@@ -16,55 +16,60 @@ from pathlib import Path
 
 import config
 
-# Maps thakk repo path → relative path under data/processed/
-SOURCE_FILE_MAP: dict[str, str] = {
-    "kodava_corrections.md": "corrections/kodava_corrections.md",
-    # Kodava Thakk Padipo sessions
-    "audio-vocab/session_01_vocab_table.md": "vocab_tables/session_01_vocab_table.md",
-    "audio-vocab/session_02_vocab_table.md": "vocab_tables/session_02_vocab_table.md",
-    "audio-vocab/session_03_vocab_table.md": "vocab_tables/session_03_vocab_table.md",
-    "audio-vocab/session_04_vocab_table.md": "vocab_tables/session_04_vocab_table.md",
-    "audio-vocab/session_05_vocab_table.md": "vocab_tables/session_05_vocab_table.md",
-    "audio-vocab/session_06_vocab_table.md": "vocab_tables/session_06_vocab_table.md",
-    "audio-vocab/session_07_vocab_table.md": "vocab_tables/session_07_vocab_table.md",
-    "audio-vocab/session_08_vocab_table.md": "vocab_tables/session_08_vocab_table.md",
-    "audio-vocab/session_09_vocab_table.md": "vocab_tables/session_09_vocab_table.md",
-    "audio-vocab/session_10_vocab_table.md": "vocab_tables/session_10_vocab_table.md",
-    "audio-vocab/session_12_vocab_table.md": "vocab_tables/session_12_vocab_table.md",
-    "audio-vocab/kodava_part1_vocab_table.md": "vocab_tables/kodava_part1_vocab_table.md",
-    "audio-vocab/Kodava_Thakk_Padipo_Session_11_vocab_table.md": "vocab_tables/Kodava_Thakk_Padipo_Session_11_vocab_table.md",
-    "audio-vocab/learn_kodava_part10_vocab_table.md": "vocab_tables/learn_kodava_part10_vocab_table.md",
-    # Kodava Padipu quizzes
-    "audio-vocab/quiz_01_vocab_table.md": "vocab_tables/quiz_01_vocab_table.md",
-    "audio-vocab/quiz_02_vocab_table.md": "vocab_tables/quiz_02_vocab_table.md",
-    "audio-vocab/quiz_03_vocab_table.md": "vocab_tables/quiz_03_vocab_table.md",
-    "audio-vocab/quiz_04_vocab_table.md": "vocab_tables/quiz_04_vocab_table.md",
-    "audio-vocab/quiz_05_vocab_table.md": "vocab_tables/quiz_05_vocab_table.md",
-    "audio-vocab/quiz_06_vocab_table.md": "vocab_tables/quiz_06_vocab_table.md",
-    "audio-vocab/quiz_07_vocab_table.md": "vocab_tables/quiz_07_vocab_table.md",
-    "audio-vocab/quiz_08_vocab_table.md": "vocab_tables/quiz_08_vocab_table.md",
-    "audio-vocab/quiz_09_vocab_table.md": "vocab_tables/quiz_09_vocab_table.md",
-    "audio-vocab/quiz_10_vocab_table.md": "vocab_tables/quiz_10_vocab_table.md",
-    "audio-vocab/quiz_11_vocab_table.md": "vocab_tables/quiz_11_vocab_table.md",
-    "audio-vocab/quiz_12_vocab_table.md": "vocab_tables/quiz_12_vocab_table.md",
-    "audio-vocab/quiz_13_vocab_table.md": "vocab_tables/quiz_13_vocab_table.md",
-    "audio-vocab/quiz_14_vocab_table.md": "vocab_tables/quiz_14_vocab_table.md",
-    "audio-vocab/quiz_15_vocab_table.md": "vocab_tables/quiz_15_vocab_table.md",
-    "audio-vocab/quiz_16_vocab_table.md": "vocab_tables/quiz_16_vocab_table.md",
-    "audio-vocab/quiz_17_vocab_table.md": "vocab_tables/quiz_17_vocab_table.md",
-    "audio-vocab/quiz_18_vocab_table.md": "vocab_tables/quiz_18_vocab_table.md",
-    "audio-vocab/quiz_19_vocab_table.md": "vocab_tables/quiz_19_vocab_table.md",
-    "audio-vocab/quiz_20_vocab_table.md": "vocab_tables/quiz_20_vocab_table.md",
-    "audio-vocab/quiz_21_vocab_table.md": "vocab_tables/quiz_21_vocab_table.md",
-    "audio-vocab/quiz_22_vocab_table.md": "vocab_tables/quiz_22_vocab_table.md",
-    "audio-vocab/quiz_23_vocab_table.md": "vocab_tables/quiz_23_vocab_table.md",
-    "audio-vocab/quiz_24_vocab_table.md": "vocab_tables/quiz_24_vocab_table.md",
-    "audio-vocab/quiz_25_vocab_table.md": "vocab_tables/quiz_25_vocab_table.md",
-    "audio-vocab/quiz_26_vocab_table.md": "vocab_tables/quiz_26_vocab_table.md",
-    "audio-vocab/quiz_27_vocab_table.md": "vocab_tables/quiz_27_vocab_table.md",
-    # Phoneme map
-    "phoneme_table/kodava_devanagari_map.json": "phonemes/kodava_devanagari_map.json",
+# Repo paths that are always excluded from corpus sync.
+# Prefix matches: any path starting with a listed prefix is skipped.
+# Exact matches: any path exactly equal to a listed entry is skipped.
+_EXCLUDE_PREFIXES: tuple[str, ...] = (
+    "M/",
+    "adapters/",
+    "data/",
+    "training_config/",
+    "corpus/",  # handled separately as special corpus/* paths
+)
+_EXCLUDE_EXACT: frozenset[str] = frozenset(
+    {
+        "README.md",
+        "test.sh",
+        "train.sh",
+    }
+)
+
+# Maps thakk directory prefix → local subdirectory under data/processed/
+_DIR_MAP: dict[str, str] = {
+    "audio-vocab/": "vocab_tables",
+    "phoneme_table/": "phonemes",
+    "training_data/": "training_data",
 }
+# Root-level files (no directory prefix) → local subdirectory
+_ROOT_FILE_MAP: dict[str, str] = {
+    "kodava_corrections.md": "corrections",
+    "elementary_kodava_FINAL.md": "textbook",
+}
+
+
+def _should_include(path: str) -> bool:
+    """Return True if a repo file path should be synced to data/processed/."""
+    if path in _EXCLUDE_EXACT:
+        return False
+    for prefix in _EXCLUDE_PREFIXES:
+        if path.startswith(prefix):
+            return False
+    # Must match a known directory or be a known root file
+    for prefix in _DIR_MAP:
+        if path.startswith(prefix):
+            return True
+    return path in _ROOT_FILE_MAP
+
+
+def _local_rel(remote_path: str) -> str:
+    """Map a thakk repo path to a relative path under data/processed/."""
+    for prefix, subdir in _DIR_MAP.items():
+        if remote_path.startswith(prefix):
+            filename = remote_path[len(prefix) :]
+            return f"{subdir}/{filename}"
+    subdir = _ROOT_FILE_MAP[remote_path]
+    filename = remote_path.split("/")[-1]
+    return f"{subdir}/{filename}"
 
 
 def _api_url(repo_path: str) -> str:
@@ -125,7 +130,9 @@ def _fetch_blob(sha: str) -> bytes:
 def sync_source_files() -> None:
     """Download source files from thakk into local data/processed/ and data/corpus/ cache.
 
-    Uses a single git tree fetch + individual blob reads to avoid secondary rate limits.
+    Dynamically discovers all files matching known include patterns — no static file list
+    to maintain. Any new file added to thakk under a known directory is picked up
+    automatically. Uses a single git tree fetch + individual blob reads.
     """
     processed = config.DATA / "processed"
     corpus = config.DATA / "corpus"
@@ -133,23 +140,28 @@ def sync_source_files() -> None:
 
     blob_map = _fetch_blob_map()
 
-    all_paths = dict(SOURCE_FILE_MAP)
-    all_paths["corpus/sentences.jsonl"] = None  # type: ignore[assignment]
-    all_paths["corpus/review.jsonl"] = None  # type: ignore[assignment]
-
-    for remote_path, local_rel in all_paths.items():
-        if remote_path not in blob_map:
-            print(f"  WARN: {remote_path} not found in thakk tree — skipping")
+    # Sync source files into data/processed/
+    synced = 0
+    for remote_path in blob_map:
+        if not _should_include(remote_path):
             continue
         content = _fetch_blob(blob_map[remote_path])
-        if local_rel is not None:
-            local = processed / local_rel
-            local.parent.mkdir(parents=True, exist_ok=True)
-            local.write_bytes(content)
-        else:
-            # corpus files go directly to data/corpus/
-            filename = remote_path.split("/")[-1]
-            (corpus / filename).write_bytes(content)
+        rel = _local_rel(remote_path)
+        local = processed / rel
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_bytes(content)
+        synced += 1
+
+    # Sync corpus JSONL files (sentences + review) directly into data/corpus/
+    for corpus_path in ("corpus/sentences.jsonl", "corpus/review.jsonl"):
+        if corpus_path not in blob_map:
+            print(f"  WARN: {corpus_path} not found in thakk tree — skipping")
+            continue
+        content = _fetch_blob(blob_map[corpus_path])
+        filename = corpus_path.split("/")[-1]
+        (corpus / filename).write_bytes(content)
+
+    print(f"  synced {synced} source files")
 
 
 def append_corpus_entry(repo_path: str, entry: dict) -> None:

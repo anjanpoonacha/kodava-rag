@@ -13,6 +13,8 @@ from core.github_sync import sync_source_files
 import ingesters.vocab_table  # noqa: F401 — registers VocabTableIngester
 import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
 import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
+import ingesters.elementary_kodava  # noqa: F401 — registers ElementaryKodavaIngester
+import ingesters.training_data  # noqa: F401 — registers TrainingDataIngester
 from ingesters import REGISTRY
 
 PROCESSED = DATA / "processed"
@@ -24,15 +26,42 @@ COLLECTIONS = {
     "vocabulary": CORPUS / "vocabulary.jsonl",
     "grammar_rule": CORPUS / "grammar_rules.jsonl",
     "phoneme": CORPUS / "phonemes.jsonl",
+    "sentence": CORPUS / "sentences.jsonl",
 }
+
+
+def _load_existing_sentences() -> tuple[list[dict], set[str]]:
+    """Load hand-verified sentences from sentences.jsonl — preserved across builds."""
+    path = CORPUS / "sentences.jsonl"
+    entries: list[dict] = []
+    ids: set[str] = set()
+    if not path.exists():
+        return entries, ids
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            e = json.loads(line)
+            if e.get("id") and e["id"] not in ids:
+                ids.add(e["id"])
+                entries.append(e)
+        except json.JSONDecodeError:
+            pass
+    return entries, ids
 
 
 def build():
     print("Syncing source files from anjanpoonacha/thakk...")
     sync_source_files()
     print("Building corpus...")
+
+    # Seed sentences bucket with existing hand-verified entries so they are
+    # never dropped — textbook-derived sentences are added after deduplication.
+    existing_sentences, seen = _load_existing_sentences()
     buckets: dict[str, list[dict]] = {k: [] for k in COLLECTIONS}
-    seen: set[str] = set()
+    buckets["sentence"].extend(existing_sentences)
+
     warnings = 0
 
     for path in sorted(PROCESSED.rglob("*")):
@@ -60,7 +89,7 @@ def build():
                     buckets[entry.type].append(entry.to_dict())
             break  # only first matching ingester per file
 
-    # Write collections
+    # Write all collections (sentences.jsonl now written, not just preserved)
     for col_type, out_path in COLLECTIONS.items():
         entries = buckets[col_type]
         with open(out_path, "w", encoding="utf-8") as f:
@@ -68,11 +97,10 @@ def build():
                 f.write(json.dumps(e, ensure_ascii=False) + "\n")
         print(f"  {out_path.name}: {len(entries)}")
 
-    # Preserve sentences.jsonl and review.jsonl — never overwritten
-    for name in ("sentences.jsonl", "review.jsonl"):
-        p = CORPUS / name
-        if not p.exists():
-            p.touch()
+    # Preserve review.jsonl — never overwritten by the build
+    review = CORPUS / "review.jsonl"
+    if not review.exists():
+        review.touch()
 
     count = sum(len(v) for v in buckets.values())
     print(f"  total: {count} entries, {warnings} warnings")

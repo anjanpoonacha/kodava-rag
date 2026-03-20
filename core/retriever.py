@@ -62,8 +62,8 @@ def search(query: str, collection: str = "sentences") -> list[dict]:
 
 def search_all(query: str) -> list[dict]:
     # sentences first — human-verified ground truth, highest priority
-    # cap each collection at 2 so no single source dominates all slots
-    PER_COLLECTION = 2
+    # cap each collection at 3 so day names and other vocab get enough slots
+    PER_COLLECTION = 3
     results = []
     for col in ("sentences", "grammar_rules", "vocabulary", "phonemes"):
         try:
