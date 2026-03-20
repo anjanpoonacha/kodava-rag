@@ -61,10 +61,14 @@ def search(query: str, collection: str = "sentences") -> list[dict]:
 
 
 def search_all(query: str) -> list[dict]:
+    # sentences first — human-verified ground truth, highest priority
+    # cap each collection at 2 so no single source dominates all slots
+    PER_COLLECTION = 2
     results = []
-    for col in ("vocabulary", "sentences", "grammar_rules", "phonemes"):
+    for col in ("sentences", "grammar_rules", "vocabulary", "phonemes"):
         try:
-            results.extend(search(query, col))
+            hits = search(query, col)
+            results.extend(hits[:PER_COLLECTION])
         except FileNotFoundError:
             pass
     return results[:TOP_K]
