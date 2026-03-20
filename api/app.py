@@ -2,6 +2,8 @@ import json
 import time
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from core.retriever import search_all, invalidate
 from core.llm import ask
@@ -11,6 +13,14 @@ from config import DATA
 app = FastAPI(title="Kodava RAG")
 
 CORPUS = DATA / "corpus"
+STATIC = Path(__file__).parent.parent / "static"
+
+if STATIC.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
+
+    @app.get("/")
+    def index():
+        return FileResponse(str(STATIC / "index.html"))
 
 
 class Query(BaseModel):
