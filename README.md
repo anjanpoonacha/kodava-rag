@@ -1,33 +1,41 @@
 # kodava-rag
 
-RAG system for Kodava takk language queries.
+RAG system for Kodava takk — a Dravidian language spoken in Coorg, Karnataka.
+
+Queries answered using BM25 retrieval over a verified corpus, with Claude as the language model.
 
 ## Setup
+
 ```bash
-pip install -r requirements.txt
-cp .env.example .env  # add ANTHROPIC_API_KEY
-python scripts/build_corpus.py
+make install
+cp .env.example .env   # add ANTHROPIC_API_KEY
+```
+
+For local proxy:
+```
+ANTHROPIC_API_KEY=your-key
+ANTHROPIC_BASE_URL=http://localhost:6655/anthropic
+SOURCE_PATH=/path/to/thakk/source
 ```
 
 ## Run
-```bash
-# CLI
-python query.py how do I say good morning
 
-# API
-uvicorn api.app:app --reload
+```bash
+make query ARGS="how do I say I went to work"
+make api    # → http://localhost:8000
 ```
 
 ## Architecture
+
 ```mermaid
 graph TD
     Q[Query] --> API[FastAPI]
     API --> BM25[BM25 Search]
-    BM25 --> LLM[Claude Sonnet 4.6]
+    BM25 -->|top 5 results| LLM[Claude Sonnet 4.6]
     LLM --> R[Response]
 
-    FB[User Feedback] --> API
-    API -->|approved/corrected| S[sentences.jsonl]
+    FB[Feedback] --> API
+    API -->|approved / corrected| S[sentences.jsonl]
     API -->|rejected| RV[review.jsonl]
     S --> BM25
 
@@ -35,12 +43,38 @@ graph TD
     CRP --> BM25
 ```
 
-## Data
-- `source/` — human truth, edit here
-- `data/corpus/` — auto-built, do not edit
-- `data/corpus/sentences.jsonl` — add verified pairs here
+## Endpoints
 
-## Add a sentence
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/query` | `{"q": "..."}` → answer + context |
+| `POST` | `/feedback` | Save correction or rejection |
+| `GET` | `/review` | Pending rejected items |
+| `GET` | `/health` | Health check |
+
+### Feedback
+
 ```bash
-echo '{"id":"s001","kodava":"naan poanê.","devanagari":"नान पोअनॅ.","english":"I went."}' >> data/corpus/sentences.jsonl
+curl -X POST http://localhost:8000/feedback \
+  -H "Content-Type: application/json" \
+  -d '{"query":"...","answer":"...","correction":"...","status":"corrected"}'
+```
+
+`status` is one of `approved` | `corrected` | `rejected`.
+
+- `approved` / `corrected` → `data/corpus/sentences.jsonl` (live in RAG immediately)
+- `rejected` → `data/corpus/review.jsonl` (review queue)
+
+## Corpus
+
+| File | Source | Editable |
+|---|---|---|
+| `data/corpus/vocabulary.jsonl` | `source/audio/vocab_tables/` | via `build_corpus.py` |
+| `data/corpus/grammar_rules.jsonl` | `source/corrections/` | via `build_corpus.py` |
+| `data/corpus/sentences.jsonl` | Native speaker / feedback | direct |
+| `data/corpus/review.jsonl` | Rejected feedback | promote manually |
+
+Rebuild derived corpus after editing source:
+```bash
+make corpus
 ```
