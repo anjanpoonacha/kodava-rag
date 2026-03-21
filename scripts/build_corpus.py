@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Factory — updates the thakk submodule, then walks data/thakk/ and writes corpus JSONL."""
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -8,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from config import DATA
+from config import DATA, EMBED_ENABLED
 from core.github_sync import sync_source_files
 import ingesters.corpus_jsonl  # noqa: F401 — registers CorpusJsonlIngester (thakk/corpus)
 import ingesters.vocab_table  # noqa: F401 — registers VocabTableIngester
@@ -172,6 +173,137 @@ def build():
         print(f"  WARNING: {warnings} entries skipped — fix source data")
     else:
         print("  OK: 0 errors")
+
+    _embed_corpus()
+
+
+def _corpus_hash() -> str:
+    """SHA-256 of all embeddable collection files concatenated.
+
+    Used to skip re-embedding when the corpus hasn't changed since the
+    last build — avoids unnecessary API calls during iterative development.
+    """
+    h = hashlib.sha256()
+    for name in (
+        "sentences_lesson.jsonl",
+        "sentences_narrative.jsonl",
+        "vocabulary.jsonl",
+        "grammar_rules.jsonl",
+        "phonemes.jsonl",
+    ):
+        p = CORPUS / name
+        if p.exists():
+            h.update(p.read_bytes())
+    return h.hexdigest()
+
+
+def _embed_corpus() -> None:
+    """Embed all corpus documents and write embeddings.npy + embeddings_meta.json.
+
+    Skips the embed step when:
+    - EMBED_ENABLED=false
+    - corpus content hash matches the hash stored from the last embed run
+
+    Re-embeds unconditionally when EMBED_ENABLED=local (fast, no API calls).
+    """
+    if EMBED_ENABLED == "false":
+        print("  embeddings: skipped (EMBED_ENABLED=false)")
+        return
+
+    from config import EMBED_MODEL
+    import numpy as np
+    from core.embedder import embed_batch
+    from core.vector_index import invalidate as invalidate_index
+
+    npy_path = CORPUS / "embeddings.npy"
+    meta_path = CORPUS / "embeddings_meta.json"
+
+    current_hash = _corpus_hash()
+
+    # Hash-based skip — only for remote embeddings (local is fast enough to always run)
+    if EMBED_ENABLED != "local" and meta_path.exists():
+        try:
+            stored = json.loads(meta_path.read_text(encoding="utf-8"))
+            if stored.get("corpus_hash") == current_hash:
+                print(
+                    f"  embeddings: up to date (hash {current_hash[:12]}…) — skipping"
+                )
+                return
+        except (ValueError, KeyError):
+            pass
+
+    print("  embeddings: building...")
+
+    # Collect all documents in order, recording position metadata
+    all_texts: list[str] = []
+    all_meta: list[dict] = []
+
+    for name in (
+        "sentences_lesson.jsonl",
+        "sentences_narrative.jsonl",
+        "vocabulary.jsonl",
+        "grammar_rules.jsonl",
+        "phonemes.jsonl",
+    ):
+        p = CORPUS / name
+        if not p.exists():
+            continue
+        collection = name.replace(".jsonl", "")
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                doc = json.loads(line)
+            except ValueError:
+                continue
+            if not doc.get("id"):
+                continue
+            # Embed text: concatenate the three most informative fields
+            text = " | ".join(
+                filter(
+                    None,
+                    [
+                        doc.get("kodava", ""),
+                        doc.get("english", ""),
+                        doc.get("explanation", ""),
+                    ],
+                )
+            )
+            if not text.strip():
+                continue
+            all_texts.append(text)
+            all_meta.append(
+                {
+                    "id": doc["id"],
+                    "collection": collection,
+                    "confidence": doc.get("confidence", "unverified"),
+                }
+            )
+
+    if not all_texts:
+        print("  embeddings: no documents to embed")
+        return
+
+    matrix = embed_batch(all_texts)  # (N, DIMS) float32
+    np.save(str(npy_path), matrix)
+
+    meta_out = {
+        "corpus_hash": current_hash,
+        "model": EMBED_MODEL,
+        "dims": int(matrix.shape[1]),
+        "count": len(all_meta),
+        "docs": all_meta,
+    }
+    meta_path.write_text(
+        json.dumps(meta_out, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+    invalidate_index()
+    mode = "local" if EMBED_ENABLED == "local" else EMBED_MODEL
+    print(
+        f"  embeddings: {len(all_meta)} docs × {matrix.shape[1]}d [{mode}] → embeddings.npy"
+    )
 
 
 if __name__ == "__main__":

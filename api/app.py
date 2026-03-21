@@ -14,7 +14,8 @@ from core.agent import run_with_trace
 from core.agent import stream as agent_stream
 from core.github_sync import append_corpus_entry
 from core.llm import SYSTEM, ask
-from core.retriever import invalidate, search_all, augment_query
+from core.retriever import invalidate, search_all, search_all_async, augment_query
+from core.vector_index import load as load_vector_index
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,9 @@ async def lifespan(app: FastAPI):
     )
     logger.info("system prompt: %s (%d chars)", source, len(SYSTEM))
     print(f"[startup] system prompt loaded from {source} ({len(SYSTEM)} chars)")
+    # Pre-load vector index so the first query doesn't pay the disk-read cost.
+    # Returns None gracefully if embeddings haven't been built yet.
+    load_vector_index()
     yield
 
 
@@ -61,8 +65,8 @@ class Feedback(BaseModel):
 
 
 @app.post("/query")
-def query(body: Query):
-    context = search_all(augment_query(body.q))
+async def query(body: Query):
+    context = await search_all_async(augment_query(body.q))
     answer = ask(body.q, context)
     return {"answer": answer, "context": context}
 

@@ -6,6 +6,5 @@ pydantic
 python-dotenv
 yt-dlp>=2026.3.17
 google-generativeai
-# Phase 2 (uncomment when needed):
-# sentence-transformers
-# lancedb
+openai
+numpy

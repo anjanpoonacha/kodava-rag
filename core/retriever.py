@@ -383,3 +383,77 @@ def search_all(query: str) -> list[dict]:
         merged.extend(per_col.get(col, []))
 
     return merged[:TOP_K]
+
+
+# ---------------------------------------------------------------------------
+# Hybrid BM25 + Dense — RRF merge
+# ---------------------------------------------------------------------------
+
+
+def _rrf_merge(
+    bm25_results: list[dict],
+    dense_results: list[dict],
+    top_k: int,
+    k: int = 60,
+) -> list[dict]:
+    """Reciprocal Rank Fusion of BM25 and dense ranked lists.
+
+    score(doc) = Σ 1/(k + rank)  across both lists.
+    Documents appearing in both lists are boosted over those appearing in only one.
+    k=60 is the standard production default (per 2026 research consensus).
+    """
+    scores: dict[str, float] = {}
+    docs_by_id: dict[str, dict] = {}
+
+    for rank, doc in enumerate(bm25_results, 1):
+        did = doc.get("id", "")
+        if not did:
+            continue
+        scores[did] = scores.get(did, 0.0) + 1.0 / (k + rank)
+        docs_by_id[did] = doc
+
+    for rank, doc in enumerate(dense_results, 1):
+        did = doc.get("id", "")
+        if not did:
+            continue
+        scores[did] = scores.get(did, 0.0) + 1.0 / (k + rank)
+        docs_by_id.setdefault(did, doc)
+
+    ranked_ids = sorted(scores, key=scores.__getitem__, reverse=True)
+    return [docs_by_id[did] for did in ranked_ids[:top_k]]
+
+
+async def search_all_async(query: str) -> list[dict]:
+    """Hybrid BM25 + dense retrieval with RRF merge.
+
+    BM25 and the embedding API call run concurrently via asyncio.  Total
+    retrieval latency = max(BM25_time ~5ms, embed_time ~100-400ms) rather
+    than their sum.
+
+    Falls back to BM25-only results when:
+    - EMBED_ENABLED=false
+    - embeddings.npy not built yet
+    - embedding API call fails (embed_one returns None)
+    """
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+
+    from core.embedder import embed_one
+    from core.vector_index import load as load_index
+
+    loop = asyncio.get_event_loop()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        bm25_future = loop.run_in_executor(pool, search_all, query)
+        embed_future = loop.run_in_executor(pool, embed_one, query)
+        bm25_results, query_vec = await asyncio.gather(bm25_future, embed_future)
+
+    if query_vec is None:
+        return bm25_results
+
+    idx = load_index()
+    if idx is None:
+        return bm25_results
+
+    dense_results = idx.search(query_vec, top_k=TOP_K)
+    return _rrf_merge(bm25_results, dense_results, top_k=TOP_K)
