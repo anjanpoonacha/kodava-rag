@@ -5,11 +5,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from config import DATA, PROMPT_FETCH, PROMPT_BRANCH, PROMPT_REPO
+from core.agent import run_with_trace
+from core.agent import stream as agent_stream
 from core.github_sync import append_corpus_entry
 from core.llm import SYSTEM, ask
 from core.retriever import invalidate, search_all
@@ -46,6 +48,11 @@ class Query(BaseModel):
     q: str
 
 
+class AgentQuery(BaseModel):
+    q: str
+    history: list[dict] | None = None
+
+
 class Feedback(BaseModel):
     query: str
     answer: str
@@ -58,6 +65,37 @@ def query(body: Query):
     context = search_all(body.q)
     answer = ask(body.q, context)
     return {"answer": answer, "context": context}
+
+
+@app.post("/agent/query")
+def agent_query(body: AgentQuery):
+    """Agentic RAG — SearchingExpert tool-use loop then blocking answer."""
+    trace = run_with_trace(body.q, body.history)
+    return {
+        "answer": trace.answer,
+        "search_calls": [
+            {
+                "query": c.query,
+                "collection": c.collection,
+                "hits": c.hits,
+            }
+            for c in trace.search_calls
+        ],
+        "context": trace.all_context,
+    }
+
+
+@app.post("/agent/stream")
+def agent_stream_endpoint(body: AgentQuery):
+    """Agentic RAG — SearchingExpert loop then SSE token stream."""
+
+    def _sse_tokens():
+        for token in agent_stream(body.q, body.history):
+            # SSE format: each data line followed by a blank line
+            yield f"data: {json.dumps({'token': token})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(_sse_tokens(), media_type="text/event-stream")
 
 
 @app.post("/feedback")
