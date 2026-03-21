@@ -91,3 +91,22 @@ tests:
         value: "JSON.parse(output).length >= 3"
       - type: icontains
         value: "sante"
+
+  # ── How-to query: ennane + adige maaduva both in context ─────────────────────
+  # Regression for: stopword "how" suppressing ennane, RRF evicting it via dense noise.
+  # Both the "how" word (ennane, id=dbc00acf) and "to cook" (adige maaduva, id=94fe4723)
+  # must be present in the retrieved context so the LLM can form the correct phrase.
+
+  - description: "how to cook — ennane and adige maaduva both retrieved"
+    vars:
+      query: "Translate: How to cook"
+    assert:
+      - type: javascript
+        value: |
+          const ctx = JSON.parse(output);
+          const ids = ctx.map(d => d.id);
+          const hasEnnane = ids.includes('dbc00acf');
+          const hasAdige  = ids.includes('94fe4723');
+          if (!hasEnnane) throw new Error('ennane (dbc00acf) missing from context');
+          if (!hasAdige)  throw new Error('adige maaduva (94fe4723) missing from context');
+          return true;

@@ -370,3 +370,24 @@ tests:
       - type: llm-rubric
         value: "Response explains how Kodava people celebrate Kaveri Sankramana, mentioning Talakaveri or the holy water (theertha) pilgrimage, using Kodava vocabulary from native speaker audio"
         threshold: 0.8
+
+  # ── How-to translation: must not fabricate, must use ennane + adige ───────────
+  # Regression for: LLM fabricating "engane" (non-existent word) when ennane was
+  # absent from context. After fix: ennane and adige maaduva both in context,
+  # correct answer is "ennane adige maaduva".
+
+  - description: "how to cook — ennane adige maaduva, no fabrication"
+    vars:
+      query: "Translate: How to cook"
+    assert:
+      - type: icontains
+        value: "ennane"
+      - type: icontains
+        value: "adige"
+      - type: not-icontains
+        value: "engane"
+      - type: not-icontains
+        value: "not in the corpus"
+      - type: llm-rubric
+        value: "Response translates 'how to cook' using the Kodava words ennane (how) and adige maaduva or adige maaduwk (to cook), without inventing vocabulary not in the corpus"
+        threshold: 0.8
