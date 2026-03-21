@@ -1,6 +1,6 @@
 import anthropic
 import json
-from config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, MODEL
+from config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, MODEL, MAX_TOKENS
 from core.prompts import load_prompt
 
 client = anthropic.Anthropic(
@@ -16,8 +16,11 @@ def ask(query: str, context: list[dict]) -> str:
     msg = f"Context:\n{ctx}\n\nQuery: {query}"
     r = client.messages.create(
         model=MODEL,
-        max_tokens=1024,
+        max_tokens=MAX_TOKENS,
         system=SYSTEM,
         messages=[{"role": "user", "content": msg}],
     )
-    return r.content[0].text
+    block = r.content[0]
+    if not isinstance(block, anthropic.types.TextBlock):
+        raise ValueError(f"Unexpected response block type: {type(block)}")
+    return block.text

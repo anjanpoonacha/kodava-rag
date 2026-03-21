@@ -2,6 +2,14 @@ import json
 from rank_bm25 import BM25Okapi
 from config import DATA, TOP_K, BM25_CANDIDATES, WORD_SEARCH_THRESHOLD
 
+# Higher number = higher priority in re-ranking after BM25 retrieval
+_CONFIDENCE_RANK = {
+    "verified": 3,
+    "audio_source": 2,
+    "textbook": 1,
+    "unverified": 0,
+}
+
 _indexes: dict = {}
 
 # English stopwords to skip during token-level fan-out
@@ -78,6 +86,8 @@ def _load(collection: str):
                     d.get("text", ""),
                     d.get("kodava", ""),
                     d.get("english", ""),
+                    d.get("kannada", ""),
+                    d.get("devanagari", ""),
                     d.get("correct", ""),
                     d.get("wrong", ""),
                     d.get("explanation", ""),
@@ -93,11 +103,20 @@ def _load(collection: str):
     return _indexes[collection]
 
 
-def invalidate(collection: str = None):
+def invalidate(collection: str | None = None):
     if collection:
         _indexes.pop(collection, None)
     else:
         _indexes.clear()
+
+
+def _rerank_by_confidence(docs: list[dict]) -> list[dict]:
+    """Stable sort: preserve BM25 order within each confidence tier."""
+    return sorted(
+        docs,
+        key=lambda d: _CONFIDENCE_RANK.get(d.get("confidence", ""), 0),
+        reverse=True,
+    )
 
 
 def search(query: str, collection: str = "sentences") -> list[dict]:
@@ -110,7 +129,8 @@ def search(query: str, collection: str = "sentences") -> list[dict]:
     top = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[
         :BM25_CANDIDATES
     ]
-    return [docs[i] for i in top if scores[i] > 0][:TOP_K]
+    candidates = [docs[i] for i in top if scores[i] > 0][:TOP_K]
+    return _rerank_by_confidence(candidates)
 
 
 def search_by_tokens(query: str, collection: str) -> list[dict]:
@@ -141,7 +161,7 @@ def search_by_tokens(query: str, collection: str) -> list[dict]:
     candidates = [i for i in range(len(docs)) if match_count[i] > 0]
     candidates.sort(key=lambda i: (match_count[i], score_sum[i]), reverse=True)
 
-    return [docs[i] for i in candidates[:TOP_K]]
+    return _rerank_by_confidence([docs[i] for i in candidates[:TOP_K]])
 
 
 def search_all(query: str) -> list[dict]:
