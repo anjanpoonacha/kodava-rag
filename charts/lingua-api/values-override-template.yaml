@@ -24,7 +24,8 @@ xsuaa:
   xsappname: ""
   redirectUri: ""      # https://<host>/**
 
-# secrets — always pass via --set, never commit real values
-# secrets:
-#   proxyApiKey: ""
-#   aicoreCredentials: ""
+# Pre-requisite secrets — create before first deploy, never in values files:
+#   kubectl create secret generic lingua-api-secrets \
+#     --from-literal=ANTHROPIC_API_KEY=unused -n <namespace>
+#   kubectl create secret generic aicore-binding \
+#     --from-literal=credentials='<aicore-json>' -n <namespace>
