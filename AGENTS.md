@@ -11,26 +11,23 @@
 
 ---
 
-## Branch Rules — Read First
+## Branch + Worktree Setup
 
-Three branches exist. Every change goes to exactly one of them.
+Three branches, each with a dedicated worktree on disk. No branch switching. No rebasing. Ever.
 
-| Branch | What goes here | What NEVER goes here |
+| Worktree | Branch | What goes here |
 |---|---|---|
-| `main` | Application code, prompts, corpus config, eval suite, tests, docs | Helm charts, Kubernetes manifests, deployment values |
-| `feat/helm-configurable-registry` | Helm chart templates and default values — generic, environment-agnostic | App code, Kyma-specific values (namespace, registry, host) |
-| `deploy/kyma` | Kyma/SAP BTP environment values only (`values-kyma.yaml`) — branches from `feat/helm` | App code, generic Helm chart structure |
+| `kodava-rag/` | `main` | App code, prompts, corpus config, eval suite, Dockerfile, entrypoint |
+| `kodava-rag-helm/` | `feat/helm-configurable-registry` | Helm chart templates + generic defaults only — no env specifics |
+| `kodava-rag-kyma/` | `deploy/kyma` | `values-kyma.yaml` only — local, **never push** |
 
-**Deployment**: before deploying to Kyma, create a local throw-away branch that rebases in the right order. This branch is never pushed.
-
+**Initial worktree setup (one-time):**
 ```bash
-# Build the deploy branch locally (do this fresh before every deploy)
-git checkout feat/helm-configurable-registry && git rebase main
-git checkout deploy/kyma && git rebase feat/helm-configurable-registry
-# Now deploy/kyma has: app code (from main) + Helm chart (from feat/helm) + Kyma values (local)
+git worktree add ../kodava-rag-helm feat/helm-configurable-registry
+git worktree add ../kodava-rag-kyma deploy/kyma
 ```
 
-**Never push `deploy/kyma` to remote** — it contains corporate-specific values.
+**Never push `deploy/kyma`** — it contains corporate registry, namespace, and host.
 
 ---
 
@@ -153,15 +150,11 @@ docker push <registry>/<image>:<tag>
 ### Deploy to Kyma
 
 ```bash
-# 1. Build the local deploy branch (never push this branch)
-git checkout feat/helm-configurable-registry && git rebase main
-git checkout deploy/kyma && git rebase feat/helm-configurable-registry
+# Work in the kyma worktree — no branch switching needed
+cd ../kodava-rag-kyma
 
-# 2. Deploy
 helm upgrade --install lingua-api ./charts/lingua-api \
-  -f charts/lingua-api/values-kyma.yaml \
-  --set app.tag=<image-tag> \
-  --set secrets.proxyApiKey=<key>
+  -f charts/lingua-api/values-kyma.yaml
 ```
 
 ### Run eval suite
