@@ -161,6 +161,18 @@ tests:
       - type: icontains
         value: "'k"
 
+  - description: "Hungry — kela baip'w not hasi"
+    vars:
+      query: "I am hungry."
+    assert:
+      - type: icontains
+        value: "kela"
+      - type: icontains
+        value: "baip"
+      - type: llm-rubric
+        value: "Response uses 'kela baip'w' or 'kela baichaind'und' for 'I am hungry' and does NOT use 'hasi' as the word for hunger"
+        threshold: 0.9
+
   - description: "Numbers 1-10 — ondh through pathth"
     vars:
       query: "I want the numbers from 1 to 10."
