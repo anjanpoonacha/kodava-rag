@@ -11,10 +11,11 @@ from pydantic import BaseModel
 
 from config import DATA, PROMPT_FETCH, PROMPT_BRANCH, PROMPT_REPO
 from core.agent import run_with_trace
-from core.agent import stream as agent_stream
+from core.agent import stream as agent_stream, _CONTEXT_SENTINEL
 from core.github_sync import append_corpus_entry
 from core.llm import SYSTEM, ask
-from core.retriever import invalidate, search_all, augment_query
+from core.retriever import invalidate, search_all, search_all_async
+from core.vector_index import load as load_vector_index
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,9 @@ async def lifespan(app: FastAPI):
     )
     logger.info("system prompt: %s (%d chars)", source, len(SYSTEM))
     print(f"[startup] system prompt loaded from {source} ({len(SYSTEM)} chars)")
+    # Pre-load vector index so the first query doesn't pay the disk-read cost.
+    # Returns None gracefully if embeddings haven't been built yet.
+    load_vector_index()
     yield
 
 
@@ -62,9 +66,17 @@ class Feedback(BaseModel):
 
 @app.post("/query")
 def query(body: Query):
-    context = search_all(augment_query(body.q))
-    answer = ask(body.q, context)
-    return {"answer": answer, "context": context}
+    """Single-shot RAG via SearchExpert agent.
+
+    Routes through the same agent loop as /agent/query so that query
+    understanding and reformulation is handled by the model, not by
+    hand-maintained regex heuristics.
+    """
+    trace = run_with_trace(body.q)
+    return {
+        "answer": trace.answer,
+        "context": trace.all_context,
+    }
 
 
 @app.post("/agent/query")
@@ -91,8 +103,11 @@ def agent_stream_endpoint(body: AgentQuery):
 
     def _sse_tokens():
         for token in agent_stream(body.q, body.history):
-            # SSE format: each data line followed by a blank line
-            yield f"data: {json.dumps({'token': token})}\n\n"
+            if token.startswith(_CONTEXT_SENTINEL):
+                ctx = json.loads(token[len(_CONTEXT_SENTINEL) :])
+                yield f"data: {json.dumps({'context': ctx})}\n\n"
+            else:
+                yield f"data: {json.dumps({'token': token})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(_sse_tokens(), media_type="text/event-stream")

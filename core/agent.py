@@ -41,38 +41,52 @@ logger = logging.getLogger(__name__)
 # Tool definition
 # ---------------------------------------------------------------------------
 
-_COLLECTIONS = ["vocabulary", "sentences", "grammar_rules", "phonemes"]
+_COLLECTIONS = [
+    "vocabulary",
+    "sentences_lesson",
+    "sentences_narrative",
+    "grammar_rules",
+    "phonemes",
+]
 
-# Tool description hot-loaded from prompts/search_agent.md — same pattern as
-# rag_assistant.md.  Loaded once at import time; restart the server (or
-# kubectl rollout restart) to pick up prompt changes in production.
-_SEARCH_TOOL_DESC: str = load_prompt("search_agent")
 
-_SEARCH_TOOL_DICT: dict[str, Any] = {
-    "name": "search_kodava",
-    "description": _SEARCH_TOOL_DESC,
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": (
-                    "Search query. Prefer short keyword forms over full "
-                    "natural-language sentences — BM25 scores are higher on "
-                    "focused tokens. Examples: 'morning', 'past tense suffix', "
-                    "'naan poane', 'LL phoneme'."
-                ),
+def _build_search_tool() -> dict[str, Any]:
+    """Build the search tool definition, loading the prompt fresh each call.
+
+    Loading per-call (instead of once at import) means prompt edits to
+    search_agent.md are picked up without restarting the server — matching
+    the same hot-reload behaviour as rag_assistant.md.
+    """
+    return {
+        "name": "search_kodava",
+        "description": load_prompt("search_agent"),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "Search query. Prefer short keyword forms over full "
+                        "natural-language sentences — BM25 scores are higher on "
+                        "focused tokens. Examples: 'morning', 'past tense suffix', "
+                        "'naan poane', 'LL phoneme'."
+                    ),
+                },
+                "collection": {
+                    "type": "string",
+                    "enum": _COLLECTIONS,
+                    "description": "Target a single collection. Omit to search all.",
+                },
             },
-            "collection": {
-                "type": "string",
-                "enum": _COLLECTIONS,
-                "description": "Target a single collection. Omit to search all.",
-            },
+            "required": ["query"],
         },
-        "required": ["query"],
-    },
-}
-SEARCH_TOOL: ToolParam = cast(ToolParam, _SEARCH_TOOL_DICT)
+    }
+
+
+def _search_tool() -> ToolParam:
+    """Return the search tool with a freshly loaded prompt description."""
+    return cast(ToolParam, _build_search_tool())
+
 
 # ---------------------------------------------------------------------------
 # Trace dataclass (returned by run_with_trace for evals / logging)
@@ -136,7 +150,7 @@ def _tool_result_block(tool_use_id: str, docs: list[dict]) -> dict:
 # Agent loop
 # ---------------------------------------------------------------------------
 
-_MAX_TOOL_ROUNDS = 2
+_MAX_TOOL_ROUNDS = 3
 
 
 def _agent_loop(
@@ -161,7 +175,7 @@ def _agent_loop(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=system,
-            tools=[SEARCH_TOOL],
+            tools=[_search_tool()],
             messages=messages,  # type: ignore[arg-type]
         )
 
@@ -240,28 +254,34 @@ def run(query: str, history: list[dict] | None = None) -> str:
     return trace.answer
 
 
+# Sentinel prefix used to pass context through the token stream to the API layer.
+# The API layer strips this prefix and emits a separate SSE context event.
+_CONTEXT_SENTINEL = "\x00ctx\x00"
+
+
 def stream(query: str, history: list[dict] | None = None) -> Iterator[str]:
-    """Tool-use loop (blocking) then stream the answer token by token."""
+    """Tool-use loop (blocking) then stream the answer token by token.
+
+    Yields answer tokens followed by a single sentinel string carrying the
+    retrieved context as JSON.  Callers that only want text should filter out
+    lines starting with _CONTEXT_SENTINEL.
+    """
     system = load_prompt("rag_assistant")
     messages, trace = _agent_loop(query, history, system)
 
-    # If the loop already produced a text answer (stop_reason = end_turn with
-    # no pending tool calls), stream it character-by-character from the cached
-    # text so callers get a consistent iterator interface.
-    last = messages[-1]
-    if last["role"] == "assistant":
-        content = last["content"]
-        if isinstance(content, list):
-            texts = [b.text for b in content if hasattr(b, "text") and b.text]
-            if texts:
-                full = "\n".join(texts)
-                trace.answer = full
-                yield full
-                return
-
-    # Final answer pass — stream the response.
+    # Always stream the final answer via messages.stream() so the caller
+    # receives genuine token-by-token output regardless of which stop_reason
+    # the tool-use loop produced.  Any text the loop already emitted is
+    # discarded here — the streaming pass regenerates it with the accumulated
+    # context injected, matching the behaviour of run_with_trace().
     client = _make_client()
     ctx_block = json.dumps(trace.all_context, ensure_ascii=False, indent=2)
+
+    # Strip any trailing assistant turn so the conversation ends on a user
+    # message before we append the final-answer prompt.
+    if messages and messages[-1]["role"] == "assistant":
+        messages = messages[:-1]
+
     messages.append(
         {
             "role": "user",
@@ -284,6 +304,7 @@ def stream(query: str, history: list[dict] | None = None) -> Iterator[str]:
             yield text
 
     trace.answer = "".join(accumulated)
+    yield _CONTEXT_SENTINEL + json.dumps(trace.all_context, ensure_ascii=False)
 
 
 def run_with_trace(query: str, history: list[dict] | None = None) -> AgentTrace:

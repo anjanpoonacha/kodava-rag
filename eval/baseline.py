@@ -340,6 +340,104 @@ def probe_retrieval():
     )
     check("retrieval", "Retriever re-ranks by confidence field", status, detail)
 
+    # 3.8 Dense retrieval — vector index and RRF merge present
+    has_rrf = "_rrf_merge" in retriever_src
+    has_async = "search_all_async" in retriever_src
+    check(
+        "retrieval",
+        "RRF merge function present",
+        PASS if has_rrf else FAIL,
+        "implemented" if has_rrf else "MISSING — add _rrf_merge() to retriever.py",
+    )
+    check(
+        "retrieval",
+        "Async hybrid search_all_async present",
+        PASS if has_async else FAIL,
+        "implemented"
+        if has_async
+        else "MISSING — add search_all_async() to retriever.py",
+    )
+
+    # 3.9 Dense index — embeddings files exist (or EMBED_ENABLED=false)
+    from config import EMBED_ENABLED
+
+    npy = CORPUS / "embeddings.npy"
+    meta = CORPUS / "embeddings_meta.json"
+    if EMBED_ENABLED == "false":
+        check(
+            "retrieval",
+            "Dense index (EMBED_ENABLED=false)",
+            PASS,
+            "disabled by config — BM25-only mode",
+        )
+    elif npy.exists() and meta.exists():
+        import json as _json
+
+        try:
+            m = _json.loads(meta.read_text())
+            count = m.get("count", 0)
+            model = m.get("model", "?")
+            dims = m.get("dims", 0)
+            check(
+                "retrieval",
+                "Dense index embeddings.npy",
+                PASS,
+                f"{count} docs × {dims}d [{model}]",
+            )
+        except Exception as exc:
+            check(
+                "retrieval",
+                "Dense index embeddings.npy",
+                WARN,
+                f"meta unreadable: {exc}",
+            )
+    else:
+        check(
+            "retrieval",
+            "Dense index embeddings.npy",
+            WARN,
+            "not built yet — run: python scripts/build_corpus.py",
+        )
+
+    # 3.10 Dense lane retrieval smoke test — Kaveri query returns audio_source hits
+    if EMBED_ENABLED != "false" and npy.exists():
+        try:
+            from core.vector_index import load as load_idx, invalidate as inv_idx
+
+            inv_idx()
+            idx = load_idx()
+            if idx:
+                from core.embedder import embed_one
+
+                qv = embed_one("What is Kaveri Sankramana festival?")
+                if qv is not None:
+                    hits = idx.search(qv, top_k=12)
+                    audio_hits = [
+                        h for h in hits if h.get("confidence") == "audio_source"
+                    ]
+                    check(
+                        "retrieval",
+                        "Dense lane: Kaveri query returns audio_source hits",
+                        PASS if audio_hits else FAIL,
+                        f"{len(audio_hits)} audio_source hits in top-12",
+                    )
+                else:
+                    check(
+                        "retrieval",
+                        "Dense lane smoke test",
+                        WARN,
+                        "embed_one returned None",
+                    )
+            else:
+                check(
+                    "retrieval",
+                    "Dense lane smoke test",
+                    WARN,
+                    "vector index not loaded",
+                )
+        except Exception as exc:
+            check("retrieval", "Dense lane smoke test", WARN, f"skipped: {exc}")
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DIMENSION 4 — System prompt quality

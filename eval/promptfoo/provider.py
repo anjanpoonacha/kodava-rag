@@ -35,13 +35,16 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
     """
     query = context.get("vars", {}).get("query", prompt)
     try:
-        ctx = search_all(query)
-        answer = ask(query, ctx)
+        trace = run_with_trace(query)
         return {
-            "output": answer,
+            "output": trace.answer,
             "metadata": {
-                "context_hits": len(ctx),
-                "context": ctx,
+                "context_hits": len(trace.all_context),
+                "context": trace.all_context,
+                "search_calls": [
+                    {"query": c.query, "collection": c.collection, "hits": c.hits}
+                    for c in trace.search_calls
+                ],
             },
         }
     except Exception as exc:
