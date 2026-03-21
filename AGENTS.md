@@ -97,6 +97,8 @@ cd eval/promptfoo && npx promptfoo eval
 - **`oa` is a single long-O vowel** → `ಓ` in Kannada, never `ಓ+ಅ`
 - **`adh` (demonstrative "that/it") → `ಅಧ`** — lexical exception to the `dh → ದ` phoneme rule
 - **`d` in Kodava = retroflex `ಡ`**, `dh` = dental `ದ` — opposite of standard romanization
+- **`kyma/deploy` is a local-only branch — never push it to remote**
+  To deploy: `git checkout kyma/deploy` → rebase onto main → deploy
 
 ---
 
