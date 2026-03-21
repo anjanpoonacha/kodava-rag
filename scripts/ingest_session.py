@@ -25,9 +25,13 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from config import DATA
+import anthropic
+
+from config import DATA, ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL
 import config
 from core.prompts import load_prompt
+
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -96,30 +100,42 @@ def push_to_thakk(local_path: Path, repo_path: str, message: str) -> str:
 
 
 def transcribe_audio(audio_path: Path, transcription_path: Path) -> None:
-    """Transcribe audio to text using the Gemini API directly."""
-    try:
-        import google.generativeai as genai
-        import os
+    """Transcribe audio via the configured Anthropic proxy (base64 audio document)."""
+    import base64 as _b64
 
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY not set")
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        audio_file = genai.upload_file(str(audio_path), mime_type="audio/mp3")
-        response = model.generate_content(
-            [
-                audio_file,
-                load_prompt("ingest_session_transcribe"),
-            ]
-        )
-        transcription_path.parent.mkdir(parents=True, exist_ok=True)
-        transcription_path.write_text(response.text, encoding="utf-8")
-    except ImportError:
-        # Fallback: use Claude with the audio file path as context
-        raise RuntimeError(
-            "google-generativeai not installed. Run: pip install google-generativeai"
-        )
+    audio_b64 = _b64.b64encode(audio_path.read_bytes()).decode("ascii")
+    prompt = load_prompt("ingest_session_transcribe")
+
+    # Build message as plain dicts — the proxy accepts raw JSON regardless of SDK types.
+    messages = [  # type: ignore[var-annotated]
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "document",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "audio/mp3",
+                        "data": audio_b64,
+                    },
+                },
+            ],
+        }
+    ]
+
+    response = client.messages.create(  # type: ignore[arg-type]
+        model=config.MODEL,
+        max_tokens=8192,
+        messages=messages,
+    )
+
+    transcription_path.parent.mkdir(parents=True, exist_ok=True)
+    text = next(
+        (b.text for b in response.content if hasattr(b, "text")),
+        "",
+    )
+    transcription_path.write_text(text, encoding="utf-8")
 
 
 # ── pipeline ─────────────────────────────────────────────────────────────────
