@@ -1,0 +1,6 @@
+apiVersion: v2
+name: lingua-api
+description: Language query API with RAG backend and SAP AI proxy
+type: application
+version: 0.1.0
+appVersion: "latest"

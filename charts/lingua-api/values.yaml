@@ -1,0 +1,69 @@
+# Default values — no environment-specific values here.
+# Override at deploy time:
+#   helm upgrade --install lingua-api ./charts/lingua-api -f charts/lingua-api/values-kyma.yaml
+#   helm upgrade --install lingua-api ./charts/lingua-api --set registry=ghcr.io/myorg
+
+namespace: default
+
+# Shared container registry for all images.
+# Override per-image via app.registry / approuter.registry / proxy.registry.
+registry: ""
+imagePullSecret: ""
+
+# lingua-api (main app)
+app:
+  registry: ""   # overrides top-level registry when set
+  image: lingua-api
+  tag: latest
+  port: 8000
+  host: ""
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: "1"
+
+# XSUAA service instance + binding
+xsuaa:
+  instanceName: lingua-api-xsuaa
+  bindingName: lingua-api-xsuaa-binding
+  xsappname: lingua-api
+  redirectUri: ""
+
+# SAP Approuter sidecar (XSUAA auth for browser access)
+approuter:
+  registry: ""   # overrides top-level registry when set
+  image: opencode-approuter
+  tag: latest
+  port: 5000
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 250m
+
+# sap-ai-proxy (in-cluster LLM proxy)
+proxy:
+  registry: ""   # overrides top-level registry when set
+  image: sap-ai-proxy
+  tag: latest
+  port: 3030
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 200m
+    limits:
+      memory: 1Gi
+      cpu: "1"
+  secrets:
+    aicoreBinding: aicore-binding
+    proxyConfig: proxy-config
+
+# Sensitive values — override at install time via --set or a secrets file
+secrets:
+  proxyApiKey: ""
+  aicoreCredentials: ""
