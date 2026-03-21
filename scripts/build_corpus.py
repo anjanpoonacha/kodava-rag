@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Factory — syncs source files from thakk, then walks data/processed/ and writes corpus JSONL."""
+"""Factory — updates the thakk submodule, then walks data/thakk/ and writes corpus JSONL."""
 
 import json
 import sys
@@ -18,7 +18,7 @@ import ingesters.elementary_kodava  # noqa: F401 — registers ElementaryKodavaI
 import ingesters.training_data  # noqa: F401 — registers TrainingDataIngester
 from ingesters import REGISTRY
 
-PROCESSED = DATA / "processed"
+THAKK = DATA / "thakk"  # git submodule — source of truth
 CORPUS = DATA / "corpus"
 CORPUS.mkdir(parents=True, exist_ok=True)
 
@@ -32,7 +32,7 @@ COLLECTIONS = {
 
 
 def _load_existing_sentences() -> tuple[list[dict], set[str]]:
-    """Load hand-verified sentences from sentences.jsonl — preserved across builds."""
+    """Load hand-verified sentences preserved across builds."""
     path = CORPUS / "sentences.jsonl"
     entries: list[dict] = []
     ids: set[str] = set()
@@ -53,7 +53,7 @@ def _load_existing_sentences() -> tuple[list[dict], set[str]]:
 
 
 def build():
-    print("Syncing source files from anjanpoonacha/thakk...")
+    print("Updating thakk submodule...")
     sync_source_files()
     print("Building corpus...")
 
@@ -61,7 +61,6 @@ def build():
 
     # Preserve hand-verified sentences from previous build
     existing_sentences, _ = _load_existing_sentences()
-
     buckets: dict[str, list[dict]] = {k: [] for k in COLLECTIONS}
     for entry in existing_sentences:
         eid = entry.get("id")
@@ -71,8 +70,11 @@ def build():
 
     warnings = 0
 
-    for path in sorted(PROCESSED.rglob("*")):
+    for path in sorted(THAKK.rglob("*")):
         if not path.is_file():
+            continue
+        # Skip git internals
+        if ".git" in path.parts:
             continue
         for ingester in REGISTRY:
             if not ingester.can_handle(path):
@@ -87,7 +89,7 @@ def build():
                     warnings += 1
                     continue
 
-                # Deduplication by deterministic id
+                # Deduplication by id
                 if entry.id in seen:
                     continue
                 seen.add(entry.id)
@@ -96,7 +98,7 @@ def build():
                     buckets[entry.type].append(entry.to_dict())
             break  # only first matching ingester per file
 
-    # Write all collections (sentences.jsonl now written, not just preserved)
+    # Write all collections
     for col_type, out_path in COLLECTIONS.items():
         entries = buckets[col_type]
         with open(out_path, "w", encoding="utf-8") as f:
@@ -104,7 +106,7 @@ def build():
                 f.write(json.dumps(e, ensure_ascii=False) + "\n")
         print(f"  {out_path.name}: {len(entries)}")
 
-    # Preserve review.jsonl — never overwritten by the build
+    # review.jsonl is never overwritten by the build
     review = CORPUS / "review.jsonl"
     if not review.exists():
         review.touch()

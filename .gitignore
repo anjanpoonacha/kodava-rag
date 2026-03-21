@@ -1,5 +1,4 @@
 data/*.db
-data/processed/
 data/raw/
 data/corpus/*.jsonl
 __pycache__/
