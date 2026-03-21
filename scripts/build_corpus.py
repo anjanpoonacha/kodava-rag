@@ -70,33 +70,39 @@ def build():
 
     warnings = 0
 
-    for path in sorted(THAKK.rglob("*")):
-        if not path.is_file():
-            continue
-        # Skip git internals
-        if ".git" in path.parts:
-            continue
+    def _ingest_path(path: Path) -> None:
+        nonlocal warnings
         for ingester in REGISTRY:
             if not ingester.can_handle(path):
                 continue
-            entries = ingester.ingest(path)
-            for entry in entries:
-                # Validation: kodava must be romanized (no Devanagari)
+            for entry in ingester.ingest(path):
                 if any("\u0900" <= ch <= "\u097f" for ch in entry.kodava):
                     print(
                         f"  WARN: Devanagari in kodava field — {path.name}: {entry.kodava[:40]}"
                     )
                     warnings += 1
                     continue
-
-                # Deduplication by id
                 if entry.id in seen:
                     continue
                 seen.add(entry.id)
-
                 if entry.type in buckets:
                     buckets[entry.type].append(entry.to_dict())
             break  # only first matching ingester per file
+
+    # Pass 1 — curated corpus JSONL first so they claim their IDs in `seen`
+    # before any derived/audio-vocab sources can produce the same entry with
+    # stale (empty) fields.
+    for path in sorted((THAKK / "corpus").glob("*.jsonl")):
+        if path.is_file():
+            _ingest_path(path)
+
+    # Pass 2 — all remaining thakk files (audio-vocab, textbook, training data)
+    for path in sorted(THAKK.rglob("*")):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        if path.parent == THAKK / "corpus" and path.suffix == ".jsonl":
+            continue  # already processed in pass 1
+        _ingest_path(path)
 
     # Write all collections
     for col_type, out_path in COLLECTIONS.items():
