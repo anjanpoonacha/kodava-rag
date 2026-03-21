@@ -1,4 +1,4 @@
-.PHONY: install corpus query api process
+.PHONY: install corpus query api process sync
 
 install:
 	pip install -r requirements.txt
@@ -15,4 +15,7 @@ query:
 
 api:
 	python3 -m uvicorn api.app:app --reload
+
+sync:
+	./scripts/sync.sh $(MSG)
 
