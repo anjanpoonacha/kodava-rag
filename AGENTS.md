@@ -11,16 +11,39 @@
 
 ---
 
+## Branch Rules — Read First
+
+Three branches exist. Every change goes to exactly one of them.
+
+| Branch | What goes here | What NEVER goes here |
+|---|---|---|
+| `main` | Application code, prompts, corpus config, eval suite, tests, docs | Helm charts, Kubernetes manifests, deployment values |
+| `feat/helm-configurable-registry` | Helm chart templates and default values — generic, environment-agnostic | App code, Kyma-specific values (namespace, registry, host) |
+| `deploy/kyma` | Kyma/SAP BTP environment values only (`values-kyma.yaml`) — branches from `feat/helm` | App code, generic Helm chart structure |
+
+**Deployment**: before deploying to Kyma, create a local throw-away branch that rebases in the right order. This branch is never pushed.
+
+```bash
+# Build the deploy branch locally (do this fresh before every deploy)
+git checkout feat/helm-configurable-registry && git rebase main
+git checkout deploy/kyma && git rebase feat/helm-configurable-registry
+# Now deploy/kyma has: app code (from main) + Helm chart (from feat/helm) + Kyma values (local)
+```
+
+**Never push `deploy/kyma` to remote** — it contains corporate-specific values.
+
+---
+
 ## Data Flow
 
 ```
-data/thakk/          ← edit language data here (submodule)
+data/thakk/          ← edit language data here (submodule → anjanpoonacha/thakk)
      │
-     │  make corpus  (git submodule update --remote, then ingesters)
+     │  python scripts/build_corpus.py
      ▼
-data/corpus/         ← generated build output (gitignored)
+data/corpus/         ← generated build output (gitignored, never edit directly)
      │
-     │  BM25 index
+     │  BM25 index (rank_bm25)
      ▼
 RAG pipeline (core/retriever.py + core/llm.py)
 ```
@@ -33,7 +56,7 @@ RAG pipeline (core/retriever.py + core/llm.py)
 
 | Path | Contents |
 |---|---|
-| `data/thakk/corpus/vocabulary.jsonl` | Curated vocabulary + seed entries |
+| `data/thakk/corpus/vocabulary.jsonl` | Curated vocabulary entries |
 | `data/thakk/corpus/sentences.jsonl` | Verified sentences and feedback |
 | `data/thakk/corpus/grammar_rules.jsonl` | Grammar rules and corrections |
 | `data/thakk/corpus/phonemes.jsonl` | Phoneme mappings |
@@ -43,63 +66,125 @@ RAG pipeline (core/retriever.py + core/llm.py)
 | `data/thakk/audio-vocab/` | Session vocab tables and transcriptions |
 | `data/thakk/training_data/` | Transliteration, grammar flags, conjugations |
 
-### Application — edit in `kodava-rag/`
+### Application code — edit on `main`
 
 | Path | Contents |
 |---|---|
-| `prompts/rag_assistant.md` | Main system prompt — phoneme rules, confidence flags, formatting |
-| `prompts/fill_kannada.md` | Kannada script rendering rules — critical phoneme exceptions |
-| `ingesters/` | One ingester per data source type |
+| `prompts/rag_assistant.md` | System prompt — hot-loaded from GitHub at container startup |
+| `prompts/fill_kannada.md` | Kannada script rendering rules for batch fill |
 | `core/retriever.py` | BM25 search + confidence re-ranking |
-| `core/llm.py` | Claude API wrapper |
+| `core/llm.py` | Claude API wrapper — loads system prompt at startup |
+| `core/prompts.py` | Prompt loader — fetches from GitHub, falls back to local file |
 | `core/github_sync.py` | Submodule update + feedback write-back API |
-| `scripts/fill_kannada.py` | Batch-fill empty `kannada` fields in corpus |
+| `scripts/build_corpus.py` | Corpus builder — runs all ingesters |
+| `scripts/fill_kannada.py` | Batch-fill empty `kannada` fields |
+| `ingesters/` | One ingester per data source type |
+| `eval/baseline.py` | Structural health probe (retrieval + corpus + prompt) |
 | `eval/promptfoo/` | LLM eval suite (promptfoo) |
+
+### Helm chart — edit on `feat/helm-configurable-registry`
+
+| Path | Contents |
+|---|---|
+| `charts/lingua-api/templates/` | Kubernetes manifests (Deployment, Service, APIRule, XSUAA) |
+| `charts/lingua-api/values.yaml` | Default values — no environment specifics |
+| `charts/lingua-api/values-override-template.yaml` | Annotated template for custom overrides |
+
+### Kyma config — edit on `deploy/kyma`
+
+| Path | Contents |
+|---|---|
+| `charts/lingua-api/values-kyma.yaml` | SAP BTP Kyma overrides: namespace, registry, host, XSUAA |
 
 ---
 
 ## Workflows
 
-### Add or correct a word
+### Update the system prompt (no image rebuild needed)
+
 ```bash
-# 1. Edit directly in the submodule
+# 1. Edit on main
+edit prompts/rag_assistant.md
+git commit -am "prompts: <describe change>"
+
+# 2. Restart the pod — it fetches the latest prompt from GitHub on startup
+kubectl rollout restart deployment/lingua-api -n <namespace>
+```
+
+`PROMPT_FETCH=true` is set by the Helm chart. The container fetches
+`prompts/rag_assistant.md` from `main` at startup, falling back to the
+file baked into the image if GitHub is unreachable.
+
+### Add or correct a word
+
+```bash
+# 1. Edit in the submodule
 edit data/thakk/corpus/vocabulary.jsonl
 
 # 2. Commit to thakk
 cd data/thakk && git commit -am "corpus: add <word>" && git push
 
-# 3. Rebuild
-cd ../.. && make corpus
+# 3. Rebuild corpus
+cd ../.. && python scripts/build_corpus.py
 ```
 
 ### Rebuild corpus after any thakk change
+
 ```bash
-make corpus   # pulls latest submodule commit + runs all ingesters
+python scripts/build_corpus.py
 ```
 
 ### Fill empty Kannada script fields
+
 ```bash
 python scripts/fill_kannada.py
 ```
 
-### Run eval suite
+### Build and push the Docker image
+
 ```bash
-cd eval/promptfoo && npx promptfoo eval
+# Always build for linux/amd64 — the Kyma cluster is amd64.
+# Building on a Mac (arm64) without this flag produces exec format error at runtime.
+# The Dockerfile pins FROM --platform=linux/amd64 — never remove that line.
+docker build --platform linux/amd64 -t <registry>/<image>:<tag> .
+docker push <registry>/<image>:<tag>
+```
+
+### Deploy to Kyma
+
+```bash
+# 1. Build the local deploy branch (never push this branch)
+git checkout feat/helm-configurable-registry && git rebase main
+git checkout deploy/kyma && git rebase feat/helm-configurable-registry
+
+# 2. Deploy
+helm upgrade --install lingua-api ./charts/lingua-api \
+  -f charts/lingua-api/values-kyma.yaml \
+  --set app.tag=<image-tag> \
+  --set secrets.proxyApiKey=<key>
+```
+
+### Run eval suite
+
+```bash
+cd eval/promptfoo && promptfoo eval
 ```
 
 ---
 
-## Rules
+## Language Rules (Kodava Takk)
 
-- **Never edit `data/corpus/`** — it is a generated artifact, gitignored, always rebuilt by `make corpus`
+- **`oa`** is a single long-O vowel → `ಓ` in Kannada, never `ಓ+ಅ`
+- **`adh`** (demonstrative "that/it") → `ಅಧ` — lexical exception to the `dh → ದ` rule
+- **`d`** in Kodava = retroflex `ಡ`; **`dh`** = dental `ದ` — opposite of standard romanisation
+- **Phoneme rules live in two places** — keep `prompts/fill_kannada.md` and `prompts/rag_assistant.md` in sync
+
+---
+
+## Data Rules
+
+- **Never edit `data/corpus/`** — it is a generated artifact, always rebuilt by `build_corpus.py`
 - **All curated language data lives in `data/thakk/`** — commit there, not here
-- **Phoneme rules live in two places** — `prompts/fill_kannada.md` (for batch fill) and `prompts/rag_assistant.md` (for live RAG responses). Keep them in sync
-- **`oa` is a single long-O vowel** → `ಓ` in Kannada, never `ಓ+ಅ`
-- **`adh` (demonstrative "that/it") → `ಅಧ`** — lexical exception to the `dh → ದ` phoneme rule
-- **`d` in Kodava = retroflex `ಡ`**, `dh` = dental `ದ` — opposite of standard romanization
-- **`kyma/deploy` is a local-only branch — never push it to remote**
-  To deploy: `git checkout kyma/deploy` → rebase onto main → deploy
-- **Always build Docker images for `linux/amd64`** — the Kyma cluster is amd64; building on a Mac (arm64) without the platform flag produces an `exec format error` at runtime. The Dockerfile pins `FROM --platform=linux/amd64` — never remove it
 
 ---
 
@@ -137,7 +222,7 @@ cd ../.. && git add data/thakk && git commit -m "pin thakk to <sha>"
 ## Eval Health Check (run before every merge to main)
 
 ```bash
-# 1. Structural health — retrieval, corpus, prompt checks (no LLM cost)
+# 1. Structural health — retrieval, corpus, prompt (no LLM cost)
 python eval/baseline.py
 
 # 2. Retrieval correctness — BM25 layer in isolation (no LLM cost, ~5s)
@@ -195,23 +280,21 @@ STEP 3 — Fix the right layer
 The entry is in the corpus but the retriever doesn't find it.
 
 **Common causes:**
-- Query has trailing punctuation (`morning?` ≠ `morning` in BM25) — fixed in retriever
-- Entry `explanation` field is empty so BM25 has only 2-3 tokens to match against
-- PER_COLLECTION cap (3) means correct collection is crowded out by noise
+- Entry `explanation` field is empty — BM25 has only 1-2 tokens to match against
+- PER_COLLECTION cap (3) means the correct collection is crowded out by noise
 
 **Fix:**
 ```bash
-# Enrich the corpus entry explanation field in data/thakk
-edit data/thakk/corpus/vocabulary.jsonl  # add explanation with natural paraphrases
+edit data/thakk/corpus/vocabulary.jsonl  # enrich explanation with natural paraphrases
 cd data/thakk && git commit -am "corpus: enrich <word> explanation for BM25"
-cd ../.. && make corpus
+cd ../.. && python scripts/build_corpus.py
 ```
 
 ### Layer P — Prompt failure
 
 Correct context is retrieved but the model ignores or misapplies an instruction.
 
-**Fix:** Edit `prompts/rag_assistant.md`.
+**Fix:** Edit `prompts/rag_assistant.md` on `main`.
 - Make the instruction more explicit with an inline example
 - Add a negative constraint ("never omit 🟡 when confidence is textbook")
 - Do NOT add new instructions without removing or replacing the conflicting old one
@@ -231,7 +314,7 @@ assert:
 ```bash
 edit data/thakk/corpus/vocabulary.jsonl
 cd data/thakk && git commit -am "corpus: add <word>"
-cd ../.. && make corpus
+cd ../.. && python scripts/build_corpus.py
 ```
 
 ### Layer T — Test calibration (last resort)
