@@ -70,6 +70,7 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
     if system_content:
         kwargs["system"] = system_content
 
+    raw = ""
     try:
         r = _client.messages.create(**kwargs)
         block = r.content[0]
@@ -95,7 +96,7 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
         }
     except Exception as exc:
         return {
-            "output": "",
+            "output": raw,
             "pass": False,
             "score": 0.0,
             "reason": f"grader error: {exc}",
