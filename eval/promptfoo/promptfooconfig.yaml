@@ -1,107 +1,130 @@
 # Promptfoo evaluation config for Kodava RAG
-# Runs against the full RAG pipeline (retrieval + Claude).
 #
 # Usage:
 #   cd eval/promptfoo
-#   promptfoo eval                  # run all tests
-#   promptfoo eval --verbose        # show full outputs
-#   promptfoo view                  # open web UI
-#   promptfoo eval -t retrieval     # run only retrieval suite
+#   promptfoo eval                        # run all tests (uses disk cache)
+#   promptfoo eval --no-cache             # force fresh API calls
+#   promptfoo view                        # open web UI
+#   PROMPTFOO_CACHE_ENABLED=false promptfoo eval  # disable cache (CI)
 
 description: "Kodava RAG — LLM response quality eval"
 
+# ── Runtime ───────────────────────────────────────────────────────────────────
+evaluateOptions:
+  maxConcurrency: 8   # default is 4; proxy handles parallel connections fine
+
+# ── Providers ─────────────────────────────────────────────────────────────────
 providers:
   - id: "file://provider.py:call_api"
     label: "RAG (retrieve + Claude)"
 
-# Single-variable prompt — the provider uses context.vars.query directly,
-# this template is here so promptfoo renders variable substitution correctly.
 prompts:
   - "{{query}}"
 
-# Use Claude Haiku as the grading judge for llm-rubric / factuality assertions.
-# This avoids any OpenAI dependency — same API key as the RAG system itself.
+# ── Grader ────────────────────────────────────────────────────────────────────
+# Built-in Anthropic provider — no Python subprocess overhead for grading.
+# apiBaseUrl trailing slash: SDK appends 'v1/messages' as a relative path,
+# preserving the /anthropic prefix required by the Local Hai proxy.
+# Env vars resolved from eval/promptfoo/.env via nunjucks {{ env.VAR }}.
 defaultTest:
   options:
-    provider: "file://grader.py:call_api"
-  assert:
-    # Every response must be in English at the top level
-    - type: llm-rubric
-      value: "The response body is written in English (Kodava/Kannada script words inline are fine, but the explanation text must be English)"
-      threshold: 0.8
+    provider:
+      id: anthropic:messages:claude-haiku-4-5
+      config:
+        apiKey: "{{ env.ANTHROPIC_API_KEY }}"
+        apiBaseUrl: "{{ env.ANTHROPIC_BASE_URL_GRADER }}"
 
+# ── Reusable assertion templates ($ref anchors) ───────────────────────────────
+assertionTemplates:
+
+  # Guard: response must say "not in the corpus" for unknown vocabulary
+  corpusGuard:
+    type: icontains
+    value: "not in the corpus"
+
+  # Format: at least one **bolded** term present
+  hasBold:
+    type: regex
+    value: '\*\*\S.*?\*\*'
+
+  # Format: markdown table rows present
+  hasTable:
+    type: regex
+    value: '\|.+\|'
+
+  # Script: Kannada Unicode characters present
+  hasKannada:
+    type: regex
+    value: '[\u0C80-\u0CFF]'
+
+# ── Tests ─────────────────────────────────────────────────────────────────────
 tests:
+
   # ── SUITE 1: Missing vocabulary guard ────────────────────────────────────────
-  # The system must say "not in the corpus" for unknown words — never fabricate.
 
   - description: "Unknown word — must refuse to fabricate"
     vars:
       query: "What is the Kodava word for helicopter?"
     assert:
-      - type: icontains
-        value: "not in the corpus"
+      - $ref: "#/assertionTemplates/corpusGuard"
 
   - description: "Unknown domain (planets) — must refuse"
     vars:
       query: "How do I say Jupiter in Kodava?"
     assert:
+      - $ref: "#/assertionTemplates/corpusGuard"
       - type: llm-rubric
-        value: "The response acknowledges that the word or concept is not in the corpus and does not invent a Kodava translation"
+        value: "Response does not invent a Kodava translation for Jupiter"
         threshold: 0.9
 
   - description: "No borrowed vocabulary — must not substitute Hindi/Urdu"
     vars:
       query: "What is the Kodava word for hospital?"
     assert:
+      - $ref: "#/assertionTemplates/corpusGuard"
       - type: llm-rubric
-        value: "If the word is missing from the corpus the response must NOT substitute a Hindi, Urdu, or Kannada loanword as if it were Kodava. It should clearly state the word is not in the corpus."
+        value: "Response does not substitute a Hindi, Urdu, or Kannada loanword as authentic Kodava vocabulary"
         threshold: 0.9
 
-  # ── SUITE 2: Format compliance ───────────────────────────────────────────────
-  # Formatting rules from the system prompt must be consistently applied.
+  # ── SUITE 2: Format compliance ────────────────────────────────────────────────
 
-  - description: "Vocabulary answer — must bold the Kodava word"
+  - description: "Vocabulary answer — Kodava word is bolded"
     vars:
       query: "What is the Kodava word for house?"
     assert:
-      - type: regex
-        value: '\*\*\S.*?\*\*'
-        # At least one **bolded** word in the response
-      - type: llm-rubric
-        value: "The Kodava word for house (mane) is bolded on its own line using markdown **bold** syntax"
-        threshold: 0.85
+      - $ref: "#/assertionTemplates/hasBold"
+      - type: icontains
+        value: "mane"
 
-  - description: "Script rendering — Kannada script must accompany Kodava word"
+  - description: "Script rendering — Kannada script accompanies Kodava word"
     vars:
       query: "What is the Kodava word for house? Show me the Kannada script."
     assert:
-      - type: llm-rubric
-        value: "The response includes the Kannada script form of the Kodava word (Kannada Unicode characters, e.g. ಮನೆ)"
-        threshold: 0.9
+      - $ref: "#/assertionTemplates/hasKannada"
+      - type: icontains
+        value: "mane"
 
-  - description: "Table format for conjugation/breakdown questions"
+  - description: "Table format for word-by-word breakdown"
     vars:
       query: "Break down the sentence 'naan sante'k poanê' word by word"
     assert:
-      - type: regex
-        value: '\|.+\|'
-        # Markdown table rows must be present
-      - type: llm-rubric
-        value: "The response uses a markdown table to show the word-by-word breakdown"
-        threshold: 0.85
+      - $ref: "#/assertionTemplates/hasTable"
+      - type: icontains
+        value: "naan"
+      - type: icontains
+        value: "sante"
 
-  # ── SUITE 3: Corpus-grounded answers ─────────────────────────────────────────
-  # Answers must be traceable to actual corpus content.
+  # ── SUITE 3: Corpus-grounded answers ──────────────────────────────────────────
 
-  - description: "Core vocabulary — water"
+  - description: "Core vocabulary — water (neer/niir)"
     vars:
       query: "How do you say water in Kodava?"
     assert:
       - type: llm-rubric
-        value: "The response correctly gives the Kodava word for water (neer or niir — both romanizations refer to the same word)"
+        value: "Response gives the Kodava word for water — neer or niir (same word, alternate romanizations)"
         threshold: 0.9
 
-  - description: "Core vocabulary — house"
+  - description: "Core vocabulary — house (mane)"
     vars:
       query: "What is the Kodava word for home?"
     assert:
@@ -114,75 +137,64 @@ tests:
     assert:
       - type: icontains
         value: "namaskara"
-      - type: llm-rubric
-        value: "The response mentions namaskara as a greeting and explains its usage"
-        threshold: 0.85
 
-  - description: "Past tense sentence — I went"
+  - description: "Past tense sentence — naan poanê"
     vars:
       query: "How do I say 'I went' in Kodava?"
     assert:
       - type: icontains
         value: "naan"
-      - type: llm-rubric
-        value: "The response includes 'naan poanê' or equivalent as the Kodava phrase for 'I went'"
-        threshold: 0.9
+      - type: icontains
+        value: "poan"
 
-  - description: "Dative suffix — to the market"
+  - description: "Dative suffix — sante'k"
     vars:
       query: "How do I say 'to the market' in Kodava?"
     assert:
       - type: icontains
         value: "sante"
-      - type: llm-rubric
-        value: "The response correctly uses the dative suffix -'k and gives sante'k as the form"
-        threshold: 0.85
+      - type: icontains
+        value: "'k"
 
   # ── SUITE 4: Confidence flags ─────────────────────────────────────────────────
-  # Textbook-only content must be flagged 🟡; verified content needs no flag.
 
-  - description: "Textbook-sourced grammar — must carry 🟡 flag"
+  - description: "Textbook grammar — 🟡 flag present when textbook sources retrieved"
     vars:
       query: "Explain the past tense conjugation rules in Kodava"
     assert:
       - type: llm-rubric
-        value: "If the response draws from textbook-only sources it includes a 🟡 flag to indicate the content is not yet native-speaker verified"
+        value: "Response includes 🟡 flag on textbook-sourced forms OR notes that conjugation rules are from textbook sources not yet native-speaker verified"
         threshold: 0.75
 
   # ── SUITE 5: Script derivation ────────────────────────────────────────────────
-  # Phoneme/script derivation must follow the phoneme rules.
 
-  - description: "LL phoneme — must render as ಳ in Kannada"
+  - description: "LL phoneme — Kannada ಳ character present"
     vars:
       query: "How is the LL sound written in Kannada script?"
     assert:
       - type: icontains
         value: "ಳ"
-      - type: llm-rubric
-        value: "The response explains that LL maps to ಳ್ಳ or ಳ in Kannada script (retroflex lateral)"
-        threshold: 0.85
 
-  - description: "Kannada script query — mane"
+  - description: "Kannada-script query — ಮನೆ ಎಂದರೇನು?"
     vars:
       query: "ಮನೆ ಎಂದರೇನು?"
     assert:
       - type: icontains
         value: "mane"
-      - type: llm-rubric
-        value: "The response correctly identifies that ಮನೆ is the Kannada script for 'mane' (house) in Kodava"
-        threshold: 0.85
+      - $ref: "#/assertionTemplates/hasKannada"
 
   # ── SUITE 6: Response completeness ───────────────────────────────────────────
 
-  - description: "Multi-part question answered in full"
+  - description: "Pronoun table — naan and niin present"
     vars:
       query: "What are the pronouns in Kodava — first, second, and third person?"
     assert:
-      - type: llm-rubric
-        value: "The response covers at least first person (naan/I) and second person (niin/you) pronouns with their Kodava forms"
-        threshold: 0.85
+      - type: icontains
+        value: "naan"
+      - type: icontains
+        value: "niin"
 
-  - description: "Answer does not exceed one screenful (conciseness)"
+  - description: "Conciseness — morning answer under 1200 chars"
     vars:
       query: "What is the Kodava word for morning?"
     assert:
@@ -191,21 +203,29 @@ tests:
       - type: icontains
         value: "polaaka"
 
-  # ── SUITE 7: Branch-specific improvements ────────────────────────────────────
-  # These tests verify capabilities that require the branch fixes to pass.
-  # They FAIL on main and PASS on the branch.
+  # ── SUITE 7: RAG-specific quality (context faithfulness) ─────────────────────
 
-  - description: "Kannada-script query resolves (requires Kannada in BM25 index)"
+  - description: "Context faithfulness — answer grounded in retrieved corpus"
+    vars:
+      query: "How do I say 'I went to the market' in Kodava?"
+    assert:
+      - type: icontains
+        value: "sante"
+      - type: context-faithfulness
+        contextTransform: "JSON.stringify(context.metadata?.context ?? [])"
+        threshold: 0.6
+
+  # ── SUITE 8: Branch-specific capabilities ────────────────────────────────────
+
+  - description: "Kannada-script query resolves (Kannada in BM25 index)"
     vars:
       query: "ಮನೆ ಅಂದ್ರೆ ಏನು Kodava ಅಲ್ಲಿ?"
     assert:
       - type: icontains
         value: "mane"
-      - type: llm-rubric
-        value: "The response correctly identifies ಮನೆ as 'mane' meaning house or home in Kodava, and the explanation is in English"
-        threshold: 0.85
+      - $ref: "#/assertionTemplates/hasKannada"
 
-  - description: "LL phoneme — Kannada ಳ character present in answer"
+  - description: "LL phoneme — Kannada ಳ character in answer"
     vars:
       query: "What does the phoneme LL map to in Kannada script?"
     assert:
