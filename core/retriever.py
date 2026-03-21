@@ -378,12 +378,19 @@ def _rrf_merge(
     dense_results: list[dict],
     top_k: int,
     k: int = 60,
+    anchored: list[dict] | None = None,
 ) -> list[dict]:
     """Reciprocal Rank Fusion of BM25 and dense ranked lists.
 
     score(doc) = Σ 1/(k + rank)  across both lists.
     Documents appearing in both lists are boosted over those appearing in only one.
     k=60 is the standard production default (per 2026 research consensus).
+
+    When `anchored` is provided, those documents are placed unconditionally at
+    the front of the output before RRF fills the remaining slots.  This
+    prevents dense-lane noise from displacing high-precision BM25 exact
+    matches (e.g. vocabulary lookups where BM25 is more precise than the
+    embedding model for exact term queries).
     """
     scores: dict[str, float] = {}
     docs_by_id: dict[str, dict] = {}
@@ -402,8 +409,20 @@ def _rrf_merge(
         scores[did] = scores.get(did, 0.0) + 1.0 / (k + rank)
         docs_by_id.setdefault(did, doc)
 
+    # Place anchored documents unconditionally at the front
+    anchor_ids: set[str] = set()
+    anchor_list: list[dict] = []
+    for doc in anchored or []:
+        did = doc.get("id", "")
+        if did and did not in anchor_ids:
+            anchor_list.append(doc)
+            anchor_ids.add(did)
+
+    # Fill remaining slots with RRF-ranked results, skipping anchored docs
     ranked_ids = sorted(scores, key=scores.__getitem__, reverse=True)
-    return [docs_by_id[did] for did in ranked_ids[:top_k]]
+    remainder = [docs_by_id[did] for did in ranked_ids if did not in anchor_ids]
+
+    return (anchor_list + remainder)[:top_k]
 
 
 async def search_all_async(query: str) -> list[dict]:
@@ -412,6 +431,12 @@ async def search_all_async(query: str) -> list[dict]:
     BM25 and the embedding API call run concurrently via asyncio.  Total
     retrieval latency = max(BM25_time ~5ms, embed_time ~100-400ms) rather
     than their sum.
+
+    The top BM25_ANCHOR results from BM25 are placed unconditionally at the
+    front of the merged list before RRF fills the remaining slots.  This
+    prevents the dense lane from displacing exact-match vocabulary hits
+    (e.g. ennane / how) that BM25 ranks highly but the embedding model
+    associates with semantically adjacent but unrelated queries.
 
     Falls back to BM25-only results when:
     - EMBED_ENABLED=false
@@ -439,4 +464,18 @@ async def search_all_async(query: str) -> list[dict]:
         return bm25_results
 
     dense_results = idx.search(query_vec, top_k=TOP_K)
-    return _rrf_merge(bm25_results, dense_results, top_k=TOP_K)
+
+    # Anchor the top vocabulary phrase hits unconditionally before RRF merge.
+    # This prevents the dense lane from displacing exact-match vocabulary
+    # lookups (e.g. ennane = how) that BM25 finds precisely but the embedding
+    # model associates with semantically-adjacent but irrelevant content.
+    # Confidence re-ranking inside search_all pushes verified sentences to the
+    # top of the global BM25 result, so we anchor from the vocabulary
+    # collection specifically rather than from the overall BM25 output.
+    vocab_anchor = search(query, "vocabulary")[:BM25_ANCHOR]
+
+    return _rrf_merge(bm25_results, dense_results, top_k=TOP_K, anchored=vocab_anchor)
+
+
+# Number of top vocabulary BM25 phrase hits anchored before RRF merge.
+BM25_ANCHOR = 3
