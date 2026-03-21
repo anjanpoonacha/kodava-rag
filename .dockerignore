@@ -1,0 +1,12 @@
+.git
+.env
+__pycache__
+*.pyc
+*.pyo
+data/raw/
+data/corpus/
+data/thakk/
+audio-vocab/
+*.mp3
+*.mp4
+wireframe-*.png
