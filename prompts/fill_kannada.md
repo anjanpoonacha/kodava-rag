@@ -12,6 +12,12 @@ Vowel digraphs — each maps to a SINGLE Kannada character:
 
   d  → ಡ  (retroflex D — NOT ದ dental, NOT ಧ aspirated)
   dh → ದ  (dental d     — NOT ಧ aspirated)
+
+EXCEPTION — lexical demonstratives use ಧ, not ದ:
+  adh / adhange / adhangalla  →  ಅಧ / ಅಧಂಗೆ / ಅಧಂಗಲ್ಲ
+  The root "adh" (meaning "that/it") is a fixed lexical form, not a phonemic dh sequence.
+  Do NOT apply the dh→ದ rule to this root.
+
   DD → ಡ್ಡ (double retroflex D)
   nd → ಂಡ (nasal + retroflex D)
   ndh→ ಂದ (nasal + dental d)
@@ -22,12 +28,14 @@ Vowel digraphs — each maps to a SINGLE Kannada character:
   nt → ಂಟ (nasal + retroflex T)
 
 Examples:
-  padikana  → ಪಡಿಕನ   (d=ಡ)
-  dhumba    → ದುಂಬ    (dh=ದ, NOT ಧ)
-  dhaar     → ದಾರ್    (dh=ದ)
-  maDDichi  → ಮಡ್ಡಿಚಿ (DD=ಡ್ಡ)
-  bandhiye  → ಬಂದಿಯೆ  (ndh=ಂದ)
-  thakk     → ತಕ್ಕ್   (th=ತ)
+  padikana  → ಪಡಿಕನ     (d=ಡ)
+  dhumba    → ದುಂಬ      (dh=ದ, NOT ಧ)
+  dhaar     → ದಾರ್      (dh=ದ)
+  maDDichi  → ಮಡ್ಡಿಚಿ   (DD=ಡ್ಡ)
+  bandhiye  → ಬಂದಿಯೆ    (ndh=ಂದ)
+  thakk     → ತಕ್ಕ್     (th=ತ)
+  adh       → ಅಧ        (lexical demonstrative — exception to dh→ದ)
+  adhange   → ಅಧಂಗೆ     (lexical demonstrative — exception to dh→ದ)
 
 For phoneme entries (single sounds like 'a', 'th', 'd'), render the phoneme itself.
 For suffix rules (like "'k", "'nda"), render the suffix.
