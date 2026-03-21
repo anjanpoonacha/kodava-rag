@@ -27,7 +27,7 @@ git worktree add ../kodava-rag-helm feat/helm-configurable-registry
 git worktree add ../kodava-rag-kyma deploy/kyma
 ```
 
-**Never push `deploy/kyma`** — it contains corporate registry, namespace, and host.
+**Never push `deploy/kyma`** — it contains environment-specific values.
 
 ---
 
@@ -91,7 +91,7 @@ RAG pipeline (core/retriever.py + core/llm.py)
 
 | Path | Contents |
 |---|---|
-| `charts/lingua-api/values-kyma.yaml` | SAP BTP Kyma overrides: namespace, registry, host, XSUAA |
+| `charts/lingua-api/values-kyma.yaml` | Environment-specific overrides (registry, host, namespace, XSUAA) |
 
 ---
 
