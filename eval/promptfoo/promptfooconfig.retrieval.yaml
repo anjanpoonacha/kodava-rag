@@ -1,0 +1,93 @@
+# Retrieval-only eval — no LLM calls, runs fast, zero API cost.
+# Tests the BM25 retrieval layer in isolation.
+#
+# Usage:
+#   cd eval/promptfoo
+#   promptfoo eval --config promptfooconfig.retrieval.yaml
+
+description: "Kodava RAG — retrieval layer eval (no LLM)"
+
+providers:
+  - id: "file://provider.py:retrieve"
+    label: "BM25 retrieval"
+
+prompts:
+  - "{{query}}"
+
+tests:
+  # ── Exact vocabulary hits ─────────────────────────────────────────────────────
+
+  - description: "mane (house) hits vocabulary collection"
+    vars:
+      query: "mane"
+      collection: "vocabulary"
+    assert:
+      - type: icontains
+        value: '"mane"'
+
+  - description: "neer (water) hits vocabulary collection"
+    vars:
+      query: "neer"
+      collection: "vocabulary"
+    assert:
+      - type: icontains
+        value: "neer"
+
+  - description: "namaskara hits vocabulary"
+    vars:
+      query: "namaskara"
+    assert:
+      - type: icontains
+        value: "namaskara"
+
+  - description: "past tense grammar rule retrieved"
+    vars:
+      query: "past tense"
+      collection: "grammar_rules"
+    assert:
+      - type: icontains
+        value: "past"
+
+  - description: "phoneme LL retrieved from phonemes"
+    vars:
+      query: "LL phoneme retroflex"
+      collection: "phonemes"
+    assert:
+      - type: icontains
+        value: "ll"
+
+  # ── Kannada-script queries ────────────────────────────────────────────────────
+
+  - description: "Kannada script naan (ನಾನ್) retrieves results"
+    vars:
+      query: "ನಾನ್"
+    assert:
+      - type: javascript
+        value: "JSON.parse(output).length > 0"
+
+  - description: "Kannada script mane (ಮನೆ) retrieves results"
+    vars:
+      query: "ಮನೆ"
+    assert:
+      - type: javascript
+        value: "JSON.parse(output).length > 0"
+
+  # ── Cold / nonsense query returns empty ───────────────────────────────────────
+
+  - description: "Nonsense query returns no results"
+    vars:
+      query: "xzqwerty_nonexistent_12345"
+    assert:
+      - type: javascript
+        value: "JSON.parse(output).length === 0"
+
+  # ── Cross-collection fanout ───────────────────────────────────────────────────
+
+  - description: "search_all returns results across collections for sentence query"
+    vars:
+      query: "naan sante'k poanê"
+    assert:
+      - type: javascript
+        value: "JSON.parse(output).length >= 3"
+      - type: icontains
+        value: "sante"

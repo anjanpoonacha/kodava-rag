@@ -4,6 +4,8 @@ data/raw/
 data/corpus/*.jsonl
 __pycache__/
 .env
+eval/promptfoo/.env
+eval/promptfoo/.promptfoo/
 *.pyc
 *.pyo
 .DS_Store
