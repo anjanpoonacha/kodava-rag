@@ -14,7 +14,7 @@ from core.agent import run_with_trace
 from core.agent import stream as agent_stream
 from core.github_sync import append_corpus_entry
 from core.llm import SYSTEM, ask
-from core.retriever import invalidate, search_all
+from core.retriever import invalidate, search_all, augment_query
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class Feedback(BaseModel):
 
 @app.post("/query")
 def query(body: Query):
-    context = search_all(body.q)
+    context = search_all(augment_query(body.q))
     answer = ask(body.q, context)
     return {"answer": answer, "context": context}
 

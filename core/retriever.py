@@ -182,6 +182,31 @@ def search_by_tokens(query: str, collection: str) -> list[dict]:
     return _rerank_by_confidence([docs[i] for i in candidates[:TOP_K]])
 
 
+_COMPOSITION_KEYWORDS = frozenset(
+    {
+        "paragraph",
+        "passage",
+        "compose",
+        "write a",
+        "write me",
+        "form a",
+        "daily routine",
+        "introduce yourself",
+        "tell me about yourself",
+        "describe yourself",
+    }
+)
+
+
+def augment_query(query: str) -> str:
+    """Append 'paragraph' to composition queries so BM25 surfaces thread entries."""
+    q_lower = query.lower()
+    if any(kw in q_lower for kw in _COMPOSITION_KEYWORDS):
+        if "paragraph" not in q_lower:
+            return query + " paragraph"
+    return query
+
+
 def search_all(query: str) -> list[dict]:
     """Layered retrieval across all collections.
 
