@@ -2,8 +2,8 @@
 # sync.sh — commit and push thakk submodule + parent in one shot
 #
 # Usage:
-#   ./scripts/sync.sh "corpus: add <word>"          # custom message for thakk
-#   ./scripts/sync.sh                               # auto-message from thakk diff
+#   ./scripts/sync.sh "corpus: add <word>"   # commit thakk changes then push both
+#   ./scripts/sync.sh                        # push only (no commit)
 
 set -euo pipefail
 
@@ -11,20 +11,19 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 THAKK="$ROOT/data/thakk"
 MSG="${1:-}"
 
-# ── 1. Commit any changes in the thakk submodule ─────────────────────────────
+# ── 1. Commit changes in thakk (only if message provided) ────────────────────
 cd "$THAKK"
 
-if ! git diff --quiet || ! git diff --cached --quiet; then
-    if [[ -z "$MSG" ]]; then
-        echo "Error: thakk has uncommitted changes — provide a commit message"
-        echo "Usage: $0 \"corpus: add <word>\""
-        exit 1
+if [[ -n "$MSG" ]]; then
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        echo "→ committing thakk: $MSG"
+        git add -A
+        git commit -m "$MSG"
+    else
+        echo "→ thakk: nothing to commit"
     fi
-    echo "→ committing thakk: $MSG"
-    git add -A
-    git commit -m "$MSG"
 else
-    echo "→ thakk: nothing to commit"
+    echo "→ thakk: skipping commit (no message)"
 fi
 
 # ── 2. Update the submodule pointer in the parent ────────────────────────────
