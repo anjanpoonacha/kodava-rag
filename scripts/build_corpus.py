@@ -107,6 +107,19 @@ def build():
             continue  # already processed in pass 1
         _ingest_path(path)
 
+    # Post-process: backfill empty explanation from english field so BM25 has
+    # at least one English token to match against for every vocabulary entry.
+    backfilled = 0
+    for entry in buckets.get("vocabulary", []):
+        if (
+            not entry.get("explanation", "").strip()
+            and entry.get("english", "").strip()
+        ):
+            entry["explanation"] = entry["english"]
+            backfilled += 1
+    if backfilled:
+        print(f"  backfilled explanation from english: {backfilled} vocabulary entries")
+
     # Write all collections
     for col_type, out_path in COLLECTIONS.items():
         entries = buckets[col_type]

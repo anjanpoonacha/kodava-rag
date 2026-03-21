@@ -26,11 +26,18 @@ def _tokenize(text: str) -> list[str]:
     Preserves apostrophes (Kodava uses ʼ/ʻ in dative suffix -ʼk) and
     hyphens (compound words). Strips everything else that BM25 would
     treat as part of a token, corrupting match scores.
+
+    Leading/trailing apostrophes on individual tokens are stripped so that
+    quoted terms like 'cook' tokenize to 'cook' not "'cook'" or "cook'".
     """
-    return _PUNCT_RE.sub(" ", text.lower()).split()
+    tokens = _PUNCT_RE.sub(" ", text.lower()).split()
+    return [t.strip("'") for t in tokens if t.strip("'")]
 
 
-# English stopwords to skip during token-level fan-out
+# English stopwords to skip during token-level fan-out.
+# Includes query-frame words that appear in almost every vocabulary query
+# ("kodava", "word", "say", "mean", "translate") and carry no discriminating
+# signal — their presence would cause meta-words to outscore content tokens.
 _STOPWORDS = frozenset(
     {
         "a",
@@ -79,6 +86,17 @@ _STOPWORDS = frozenset(
         "who",
         "this",
         "that",
+        # Query-frame words — high-frequency in user queries but zero
+        # discriminating power for vocabulary lookup
+        "kodava",
+        "word",
+        "say",
+        "mean",
+        "means",
+        "translate",
+        "translation",
+        "how",
+        "takk",
     }
 )
 
@@ -232,40 +250,76 @@ def search_all(query: str) -> list[dict]:
     Layer 1 (phrase): full-query BM25 per collection, highest priority.
     Layer 2 (token voting): per-token fan-out for collections where Layer 1
       returns fewer than WORD_SEARCH_THRESHOLD hits.
-    Results are deduplicated by id and capped at TOP_K.
-    """
-    PER_COLLECTION = 3
-    seen_ids: set = set()
-    results: list[dict] = []
 
-    def _add(docs: list[dict], cap: int):
-        added = 0
+    Each collection is allocated its own independent slot budget so that a
+    high-scoring but irrelevant collection (e.g. sentences matching common
+    query words) cannot consume the entire TOP_K budget and starve
+    vocabulary. Results are deduplicated by id and capped at TOP_K.
+    """
+    # Per-collection slot budgets. vocabulary gets more slots because word
+    # lookup queries must surface specific lexical entries that may rank below
+    # generic action-word patterns in the BM25 list.
+    COL_CAPS = {
+        "sentences": 3,
+        "grammar_rules": 3,
+        "vocabulary": 5,
+        "phonemes": 2,
+        "_threads": 2,
+    }
+    seen_ids: set = set()
+
+    # Collect results per-collection independently before merging.
+    per_col: dict[str, list[dict]] = {}
+
+    def _collect(docs: list[dict], col: str, cap: int) -> None:
+        bucket = per_col.setdefault(col, [])
         for d in docs:
-            if added >= cap:
+            if len(bucket) >= cap:
                 break
             doc_id = d.get("id")
             if doc_id and doc_id in seen_ids:
                 continue
-            results.append(d)
+            bucket.append(d)
             if doc_id:
                 seen_ids.add(doc_id)
-            added += 1
 
     # Layer 0: inject top paragraph thread for composition queries
     if "paragraph" in query.lower():
-        _add(_search_threads(query), 2)
+        _collect(_search_threads(query), "_threads", COL_CAPS["_threads"])
 
     for col in ("sentences", "grammar_rules", "vocabulary", "phonemes"):
+        phrase_cap = COL_CAPS.get(col, 3)
         try:
-            # Layer 1
+            # Layer 1: phrase-level BM25
             phrase_hits = search(query, col)
-            _add(phrase_hits, PER_COLLECTION)
+            _collect(phrase_hits, col, phrase_cap)
 
-            # Layer 2: token voting fallback when phrase search is thin
-            if len(phrase_hits) < WORD_SEARCH_THRESHOLD:
+            # Layer 2: token voting — always run for vocabulary so that
+            # content-specific terms (e.g. "cook") can surface entries that
+            # rank below the phrase-level cap due to competing generic patterns.
+            # Token voting gets its own additive cap so it is never crowded out
+            # by phrase hits that already filled the bucket.
+            # For other collections, run only when phrase search is thin.
+            if col == "vocabulary" or len(phrase_hits) < WORD_SEARCH_THRESHOLD:
                 token_hits = search_by_tokens(query, col)
-                _add(token_hits, PER_COLLECTION)
+                token_cap = phrase_cap if col == "vocabulary" else phrase_cap
+                _collect(token_hits, col + "_tokens", token_cap)
         except FileNotFoundError:
             pass
 
-    return results[:TOP_K]
+    # Merge: threads first, then interleave phrase hits and token hits so that
+    # content-specific vocabulary entries (from token voting) are not pushed
+    # beyond TOP_K by generic phrase matches from other collections.
+    ordered_cols = [
+        "_threads",
+        "sentences",
+        "grammar_rules",
+        "vocabulary",
+        "vocabulary_tokens",
+        "phonemes",
+    ]
+    merged: list[dict] = []
+    for col in ordered_cols:
+        merged.extend(per_col.get(col, []))
+
+    return merged[:TOP_K]
