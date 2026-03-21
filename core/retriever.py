@@ -34,70 +34,33 @@ def _tokenize(text: str) -> list[str]:
     return [t.strip("'") for t in tokens if t.strip("'")]
 
 
-# English stopwords to skip during token-level fan-out.
-# Includes query-frame words that appear in almost every vocabulary query
-# ("kodava", "word", "say", "mean", "translate") and carry no discriminating
-# signal — their presence would cause meta-words to outscore content tokens.
-_STOPWORDS = frozenset(
-    {
-        "a",
-        "an",
-        "the",
-        "is",
-        "are",
-        "was",
-        "were",
-        "be",
-        "been",
-        "being",
-        "do",
-        "does",
-        "did",
-        "have",
-        "has",
-        "had",
-        "will",
-        "would",
-        "could",
-        "should",
-        "may",
-        "might",
-        "shall",
-        "can",
-        "to",
-        "of",
-        "in",
-        "on",
-        "at",
-        "by",
-        "for",
-        "with",
-        "about",
-        "it",
-        "its",
-        "i",
-        "you",
-        "he",
-        "she",
-        "we",
-        "they",
-        "what",
-        "which",
-        "who",
-        "this",
-        "that",
-        # Query-frame words — high-frequency in user queries but zero
-        # discriminating power for vocabulary lookup
-        "kodava",
-        "word",
-        "say",
-        "mean",
-        "means",
-        "translate",
-        "translation",
-        "how",
-        "takk",
-    }
+# Minimum per-token BM25 score for Layer 2 token fan-out.
+# Replaces the old hand-maintained _STOPWORDS blocklist.
+#
+# BM25Okapi IDF naturally weights common English function words near zero
+# (e.g. "to" scores ≤ 3.5, "the" ≤ 3.0 on any single corpus entry).
+# Content-bearing tokens score substantially higher:
+#   "how"  → 7.4   (ennane entries)
+#   "cook" → 9+    (adige entries)
+#   "are"  → 5.8   (are = waist/half)
+#
+# Setting the threshold to 4.0 lets semantic content tokens through while
+# suppressing English function words that BM25 already down-weights via IDF,
+# without a hand-maintained list that could silently suppress valid lookups.
+_MIN_TOKEN_SCORE = 4.0
+
+# Query-frame patterns: prefix fragments that carry no semantic content for
+# corpus search. Stripped before passing the query to BM25 so the retriever
+# sees the semantic target ("How to cook", "flower", "bappa") not the frame.
+_QUERY_FRAME_RE = re.compile(
+    r"^\s*(?:"
+    r"translate\s*[:\-]?\s*"  # "Translate: X"
+    r"|how\s+do\s+(?:you\s+)?(?:say|translate)\s+"  # "How do you say X"
+    r"|how\s+to\s+say\s+"  # "How to say X"
+    r"|what\s+(?:is|does|are)\s+(?:the\s+)?word\s+for\s+"  # "What is the word for X"
+    r"|what\s+(?:is|does|are)\s+(?:the\s+)?translation\s+(?:of|for)\s+"  # "What is the translation of X"
+    r")",
+    re.IGNORECASE,
 )
 
 
@@ -115,23 +78,23 @@ def _load(collection: str):
         _indexes[collection] = (None, [])
         return _indexes[collection]
     tokenized = [
-        " ".join(
-            filter(
-                None,
-                [
-                    d.get("text", ""),
-                    d.get("kodava", ""),
-                    d.get("english", ""),
-                    d.get("kannada", ""),
-                    d.get("devanagari", ""),
-                    d.get("correct", ""),
-                    d.get("wrong", ""),
-                    d.get("explanation", ""),
-                ],
+        _tokenize(
+            " ".join(
+                filter(
+                    None,
+                    [
+                        d.get("text", ""),
+                        d.get("kodava", ""),
+                        d.get("english", ""),
+                        d.get("kannada", ""),
+                        d.get("devanagari", ""),
+                        d.get("correct", ""),
+                        d.get("wrong", ""),
+                        d.get("explanation", ""),
+                    ],
+                )
             )
         )
-        .lower()
-        .split()
         for d in docs
     ]
     tokenized = [t if t else ["_"] for t in tokenized]
@@ -170,26 +133,33 @@ def search(query: str, collection: str = "sentences") -> list[dict]:
 
 
 def search_by_tokens(query: str, collection: str) -> list[dict]:
-    """Layer 2: word-level token voting — run BM25 per non-stopword token,
+    """Layer 2: word-level token voting — run BM25 per content token,
     rank by (tokens_matched DESC, sum_score DESC). Surfaces partial matches
     when full-phrase search misses due to missing vocabulary.
+
+    Uses a per-token minimum BM25 score threshold (_MIN_TOKEN_SCORE) instead
+    of a hand-maintained stopword list.  BM25 IDF naturally assigns near-zero
+    scores to high-frequency English function words ("to", "the", "a"), so
+    the threshold suppresses noise without blocking valid lookup targets like
+    "how" (ennane) or "are" (are = waist/half) that were previously hidden.
     """
     bm25, docs = _load(collection)
     if bm25 is None:
         return []
 
-    tokens = [t for t in _tokenize(query) if t not in _STOPWORDS and len(t) > 1]
+    tokens = [t for t in _tokenize(query) if len(t) > 1]
     if not tokens:
         return []
 
-    # Accumulate per-doc: total BM25 score and number of tokens matched
+    # Accumulate per-doc: total BM25 score and number of tokens that cleared
+    # the minimum score threshold.
     score_sum = [0.0] * len(docs)
     match_count = [0] * len(docs)
 
     for token in tokens:
         per_token_scores = bm25.get_scores([token])
         for i, s in enumerate(per_token_scores):
-            if s > 0:
+            if s >= _MIN_TOKEN_SCORE:
                 score_sum[i] += s
                 match_count[i] += 1
 
@@ -233,7 +203,20 @@ _TOPIC_TAG_MAP: dict[str, str] = {
 
 
 def augment_query(query: str) -> str:
-    """Append 'paragraph' to composition queries so BM25 surfaces thread entries."""
+    """Preprocess query before retrieval.
+
+    1. Strip query-frame prefixes ("Translate:", "How do you say", etc.) so
+       BM25 and the embedding model see the semantic target rather than the
+       English wrapper.  "Translate: How to cook" → "How to cook".
+
+    2. Append "paragraph" to composition queries so BM25 surfaces thread
+       entries for write/compose requests.
+    """
+    # Strip query-frame prefix — the content after the frame is the real query
+    stripped = _QUERY_FRAME_RE.sub("", query).strip()
+    if stripped and stripped != query:
+        query = stripped
+
     q_lower = query.lower()
     if any(kw in q_lower for kw in _COMPOSITION_KEYWORDS):
         if "paragraph" not in q_lower:
