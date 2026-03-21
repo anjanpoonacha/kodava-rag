@@ -99,6 +99,7 @@ cd eval/promptfoo && npx promptfoo eval
 - **`d` in Kodava = retroflex `ಡ`**, `dh` = dental `ದ` — opposite of standard romanization
 - **`kyma/deploy` is a local-only branch — never push it to remote**
   To deploy: `git checkout kyma/deploy` → rebase onto main → deploy
+- **Always build Docker images for `linux/amd64`** — the Kyma cluster is amd64; building on a Mac (arm64) without the platform flag produces an `exec format error` at runtime. The Dockerfile pins `FROM --platform=linux/amd64` — never remove it
 
 ---
 
