@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from core.agent import run_with_trace
 from core.llm import ask
-from core.retriever import search, search_all, augment_query
+from core.retriever import search, search_all
 
 
 # ── Full RAG provider ──────────────────────────────────────────────────────────
@@ -35,13 +35,16 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
     """
     query = context.get("vars", {}).get("query", prompt)
     try:
-        ctx = search_all(augment_query(query))
-        answer = ask(query, ctx)
+        trace = run_with_trace(query)
         return {
-            "output": answer,
+            "output": trace.answer,
             "metadata": {
-                "context_hits": len(ctx),
-                "context": ctx,
+                "context_hits": len(trace.all_context),
+                "context": trace.all_context,
+                "search_calls": [
+                    {"query": c.query, "collection": c.collection, "hits": c.hits}
+                    for c in trace.search_calls
+                ],
             },
         }
     except Exception as exc:
@@ -94,11 +97,7 @@ def retrieve(prompt: str, options: dict, context: dict) -> dict:
     collection = vars_.get("collection", None)
 
     try:
-        docs = (
-            search(query, collection)
-            if collection
-            else search_all(augment_query(query))
-        )
+        docs = search(query, collection) if collection else search_all(query)
         return {
             "output": json.dumps(docs, ensure_ascii=False, indent=2),
             "metadata": {"hits": len(docs)},

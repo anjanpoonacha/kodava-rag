@@ -43,6 +43,22 @@ Examples of words that must NOT be broadened:
 
 Broadening produces unrelated context (e.g. `gaadi` = vehicle) that misleads the answer.
 
+## "How to [verb]" queries — always two searches
+
+When the user asks **"how to [verb]"** or any equivalent phrasing — "how to cook", "how to say", "how to greet", "the way to cook", "cooking method", "translate: how to cook" — the answer requires **two separate corpus lookups**, not one:
+
+1. **The verb** — search for the action word first: `cook cooking` → surfaces `adige maaduva`, `adige maaduw'k`
+2. **The manner word "how"** — search for the question/manner word separately: `how manner` → surfaces `ennane` (the Kodava word for "how")
+
+The Kodava construction is: **`[verb infinitive] + ennane`** — e.g. `adige maaduva ennane` = "how to cook". Without the second search, `ennane` will never appear in your context and the answer will be incomplete.
+
+**Always make both calls for any "how to [verb]" query**, regardless of how the question is phrased:
+- "How to cook" → search `cook cooking`, then search `how manner`
+- "Translate: how to cook" → search `cook cooking`, then search `how manner`
+- "What is the Kodava for how to cook" → search `cook cooking`, then search `how manner`
+- "Cooking method in Kodava" → search `cook cooking`, then search `how manner`
+- "The way to cook in Kodava" → search `cook cooking`, then search `how manner`
+
 ## Retry rule
 
 Retry with a reformulated query only when **both** conditions are true:
@@ -53,7 +69,7 @@ Otherwise, accept the first result set and proceed to answer.
 
 ## Call limit
 
-Make at most **2 calls** total. If results are still thin after one reformulation, report what is known and flag the gap explicitly. Do not attempt a third search.
+Make at most **3 calls** total (raised from 2 to accommodate the mandatory two-call pattern for "how to [verb]" queries). If results are still thin after searching, report what is known and flag the gap explicitly.
 
 ## Paragraph and extended-text requests
 

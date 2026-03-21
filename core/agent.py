@@ -136,7 +136,7 @@ def _tool_result_block(tool_use_id: str, docs: list[dict]) -> dict:
 # Agent loop
 # ---------------------------------------------------------------------------
 
-_MAX_TOOL_ROUNDS = 2
+_MAX_TOOL_ROUNDS = 3
 
 
 def _agent_loop(

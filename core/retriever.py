@@ -49,20 +49,6 @@ def _tokenize(text: str) -> list[str]:
 # without a hand-maintained list that could silently suppress valid lookups.
 _MIN_TOKEN_SCORE = 4.0
 
-# Query-frame patterns: prefix fragments that carry no semantic content for
-# corpus search. Stripped before passing the query to BM25 so the retriever
-# sees the semantic target ("How to cook", "flower", "bappa") not the frame.
-_QUERY_FRAME_RE = re.compile(
-    r"^\s*(?:"
-    r"translate\s*[:\-]?\s*"  # "Translate: X"
-    r"|how\s+do\s+(?:you\s+)?(?:say|translate)\s+"  # "How do you say X"
-    r"|how\s+to\s+say\s+"  # "How to say X"
-    r"|what\s+(?:is|does|are)\s+(?:the\s+)?word\s+for\s+"  # "What is the word for X"
-    r"|what\s+(?:is|does|are)\s+(?:the\s+)?translation\s+(?:of|for)\s+"  # "What is the translation of X"
-    r")",
-    re.IGNORECASE,
-)
-
 
 def _load(collection: str):
     if collection in _indexes:
@@ -203,20 +189,13 @@ _TOPIC_TAG_MAP: dict[str, str] = {
 
 
 def augment_query(query: str) -> str:
-    """Preprocess query before retrieval.
+    """Append 'paragraph' to composition queries so BM25 surfaces thread entries.
 
-    1. Strip query-frame prefixes ("Translate:", "How do you say", etc.) so
-       BM25 and the embedding model see the semantic target rather than the
-       English wrapper.  "Translate: How to cook" → "How to cook".
-
-    2. Append "paragraph" to composition queries so BM25 surfaces thread
-       entries for write/compose requests.
+    Query-frame stripping ("Translate:", "How do you say X in Kodava", etc.) is
+    handled by the SearchExpert agent which reformulates natural-language queries
+    into focused BM25 keywords before calling search_kodava.  The /query endpoint
+    now routes through the agent, so manual regex is not needed here.
     """
-    # Strip query-frame prefix — the content after the frame is the real query
-    stripped = _QUERY_FRAME_RE.sub("", query).strip()
-    if stripped and stripped != query:
-        query = stripped
-
     q_lower = query.lower()
     if any(kw in q_lower for kw in _COMPOSITION_KEYWORDS):
         if "paragraph" not in q_lower:
@@ -378,19 +357,12 @@ def _rrf_merge(
     dense_results: list[dict],
     top_k: int,
     k: int = 60,
-    anchored: list[dict] | None = None,
 ) -> list[dict]:
     """Reciprocal Rank Fusion of BM25 and dense ranked lists.
 
     score(doc) = Σ 1/(k + rank)  across both lists.
     Documents appearing in both lists are boosted over those appearing in only one.
     k=60 is the standard production default (per 2026 research consensus).
-
-    When `anchored` is provided, those documents are placed unconditionally at
-    the front of the output before RRF fills the remaining slots.  This
-    prevents dense-lane noise from displacing high-precision BM25 exact
-    matches (e.g. vocabulary lookups where BM25 is more precise than the
-    embedding model for exact term queries).
     """
     scores: dict[str, float] = {}
     docs_by_id: dict[str, dict] = {}
@@ -409,20 +381,8 @@ def _rrf_merge(
         scores[did] = scores.get(did, 0.0) + 1.0 / (k + rank)
         docs_by_id.setdefault(did, doc)
 
-    # Place anchored documents unconditionally at the front
-    anchor_ids: set[str] = set()
-    anchor_list: list[dict] = []
-    for doc in anchored or []:
-        did = doc.get("id", "")
-        if did and did not in anchor_ids:
-            anchor_list.append(doc)
-            anchor_ids.add(did)
-
-    # Fill remaining slots with RRF-ranked results, skipping anchored docs
     ranked_ids = sorted(scores, key=scores.__getitem__, reverse=True)
-    remainder = [docs_by_id[did] for did in ranked_ids if did not in anchor_ids]
-
-    return (anchor_list + remainder)[:top_k]
+    return [docs_by_id[did] for did in ranked_ids[:top_k]]
 
 
 async def search_all_async(query: str) -> list[dict]:
@@ -464,18 +424,4 @@ async def search_all_async(query: str) -> list[dict]:
         return bm25_results
 
     dense_results = idx.search(query_vec, top_k=TOP_K)
-
-    # Anchor the top vocabulary phrase hits unconditionally before RRF merge.
-    # This prevents the dense lane from displacing exact-match vocabulary
-    # lookups (e.g. ennane = how) that BM25 finds precisely but the embedding
-    # model associates with semantically-adjacent but irrelevant content.
-    # Confidence re-ranking inside search_all pushes verified sentences to the
-    # top of the global BM25 result, so we anchor from the vocabulary
-    # collection specifically rather than from the overall BM25 output.
-    vocab_anchor = search(query, "vocabulary")[:BM25_ANCHOR]
-
-    return _rrf_merge(bm25_results, dense_results, top_k=TOP_K, anchored=vocab_anchor)
-
-
-# Number of top vocabulary BM25 phrase hits anchored before RRF merge.
-BM25_ANCHOR = 3
+    return _rrf_merge(bm25_results, dense_results, top_k=TOP_K)

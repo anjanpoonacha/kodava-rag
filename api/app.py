@@ -14,7 +14,7 @@ from core.agent import run_with_trace
 from core.agent import stream as agent_stream, _CONTEXT_SENTINEL
 from core.github_sync import append_corpus_entry
 from core.llm import SYSTEM, ask
-from core.retriever import invalidate, search_all, search_all_async, augment_query
+from core.retriever import invalidate, search_all, search_all_async
 from core.vector_index import load as load_vector_index
 
 logger = logging.getLogger(__name__)
@@ -65,10 +65,18 @@ class Feedback(BaseModel):
 
 
 @app.post("/query")
-async def query(body: Query):
-    context = await search_all_async(augment_query(body.q))
-    answer = ask(body.q, context)
-    return {"answer": answer, "context": context}
+def query(body: Query):
+    """Single-shot RAG via SearchExpert agent.
+
+    Routes through the same agent loop as /agent/query so that query
+    understanding and reformulation is handled by the model, not by
+    hand-maintained regex heuristics.
+    """
+    trace = run_with_trace(body.q)
+    return {
+        "answer": trace.answer,
+        "context": trace.all_context,
+    }
 
 
 @app.post("/agent/query")
