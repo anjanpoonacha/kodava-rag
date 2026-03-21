@@ -1,6 +1,13 @@
 import json
+import re
 from rank_bm25 import BM25Okapi
 from config import DATA, TOP_K, BM25_CANDIDATES, WORD_SEARCH_THRESHOLD
+
+# Punctuation characters that corrupt BM25 token matching when attached to
+# query words (e.g. "morning?" ≠ "morning", "niin." ≠ "niin").
+# The corpus entries are stored without trailing punctuation so we must
+# normalise the query to match.
+_PUNCT_RE = re.compile(r"[^\w\s\'\-]")
 
 # Higher number = higher priority in re-ranking after BM25 retrieval
 _CONFIDENCE_RANK = {
@@ -11,6 +18,17 @@ _CONFIDENCE_RANK = {
 }
 
 _indexes: dict = {}
+
+
+def _tokenize(text: str) -> list[str]:
+    """Lowercase and strip punctuation before splitting into BM25 tokens.
+
+    Preserves apostrophes (Kodava uses ʼ/ʻ in dative suffix -ʼk) and
+    hyphens (compound words). Strips everything else that BM25 would
+    treat as part of a token, corrupting match scores.
+    """
+    return _PUNCT_RE.sub(" ", text.lower()).split()
+
 
 # English stopwords to skip during token-level fan-out
 _STOPWORDS = frozenset(
@@ -124,7 +142,7 @@ def search(query: str, collection: str = "sentences") -> list[dict]:
     bm25, docs = _load(collection)
     if bm25 is None:
         return []
-    tokens = query.lower().split()
+    tokens = _tokenize(query)
     scores = bm25.get_scores(tokens)
     top = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[
         :BM25_CANDIDATES
@@ -142,7 +160,7 @@ def search_by_tokens(query: str, collection: str) -> list[dict]:
     if bm25 is None:
         return []
 
-    tokens = [t for t in query.lower().split() if t not in _STOPWORDS and len(t) > 1]
+    tokens = [t for t in _tokenize(query) if t not in _STOPWORDS and len(t) > 1]
     if not tokens:
         return []
 

@@ -190,7 +190,7 @@ tests:
 
   - description: "Pronoun table — naan and niin present"
     vars:
-      query: "What are naan and niin in Kodava? Show me the pronoun table."
+      query: "What are the pronouns in Kodava — first, second, and third person?"
     assert:
       - type: icontains
         value: "naan"
@@ -199,7 +199,7 @@ tests:
 
   - description: "Conciseness — morning answer under 1200 chars"
     vars:
-      query: "How do you say morning in Kodava? What is polaaka?"
+      query: "What is the Kodava word for morning?"
     assert:
       - type: javascript
         value: "output.length < 1200"

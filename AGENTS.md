@@ -128,3 +128,114 @@ git submodule update --init data/thakk
 cd data/thakk && git checkout <sha>
 cd ../.. && git add data/thakk && git commit -m "pin thakk to <sha>"
 ```
+
+---
+
+## Eval Health Check (run before every merge to main)
+
+```bash
+# 1. Structural health — retrieval, corpus, prompt checks (no LLM cost)
+python eval/baseline.py
+
+# 2. Retrieval correctness — BM25 layer in isolation (no LLM cost, ~5s)
+cd eval/promptfoo && promptfoo eval --config promptfooconfig.retrieval.yaml --no-cache
+
+# 3. LLM response quality — full pipeline, 19 test cases (~25s)
+cd eval/promptfoo && promptfoo eval --config promptfooconfig.yaml
+```
+
+If any test fails → diagnose root cause layer before fixing anything.
+
+---
+
+## When a Test Fails — Diagnostic Workflow
+
+A failing test is a signal. Diagnose the layer first, then fix the right thing.
+
+```
+test fails
+    │
+    ▼
+STEP 1 — Reproduce
+    python3 -c "
+    from core.retriever import search_all, invalidate
+    invalidate()
+    ctx = search_all('<query>')
+    for r in ctx: print(r.get('confidence'), r.get('kodava'), r.get('english')[:30])
+    "
+
+    ▼
+STEP 2 — Identify the layer
+
+    Is the word genuinely absent from corpus?
+        YES → Layer C  (expected behavior — test should assert "not in the corpus")
+        NO  ↓
+
+    Does search_all() return the relevant entry?
+        NO  → Layer R  (retrieval failure)
+        YES ↓
+
+    Does the model ignore the retrieved context?
+        YES → Layer P  (prompt compliance failure)
+        NO  ↓
+
+    Is the test query unnatural / no real learner would phrase it this way?
+        YES → Layer T  (test calibration — last resort, document why)
+        NO  → Layer P  (model behavior wrong in a way the prompt doesn't prevent)
+
+    ▼
+STEP 3 — Fix the right layer
+```
+
+### Layer R — Retrieval failure
+
+The entry is in the corpus but the retriever doesn't find it.
+
+**Common causes:**
+- Query has trailing punctuation (`morning?` ≠ `morning` in BM25) — fixed in retriever
+- Entry `explanation` field is empty so BM25 has only 2-3 tokens to match against
+- PER_COLLECTION cap (3) means correct collection is crowded out by noise
+
+**Fix:**
+```bash
+# Enrich the corpus entry explanation field in data/thakk
+edit data/thakk/corpus/vocabulary.jsonl  # add explanation with natural paraphrases
+cd data/thakk && git commit -am "corpus: enrich <word> explanation for BM25"
+cd ../.. && make corpus
+```
+
+### Layer P — Prompt failure
+
+Correct context is retrieved but the model ignores or misapplies an instruction.
+
+**Fix:** Edit `prompts/rag_assistant.md`.
+- Make the instruction more explicit with an inline example
+- Add a negative constraint ("never omit 🟡 when confidence is textbook")
+- Do NOT add new instructions without removing or replacing the conflicting old one
+
+### Layer C — Corpus gap
+
+Word is genuinely absent. The correct system behavior is to say so explicitly.
+
+**Test assertion should be:**
+```yaml
+assert:
+  - type: icontains
+    value: "not in the corpus"
+```
+
+**If the word should be added:**
+```bash
+edit data/thakk/corpus/vocabulary.jsonl
+cd data/thakk && git commit -am "corpus: add <word>"
+cd ../.. && make corpus
+```
+
+### Layer T — Test calibration (last resort)
+
+Only when: entry exists, retriever finds it, model answers correctly, but the test query is genuinely unnatural.
+
+Fix: change the test query to the most natural phrasing a learner would actually use.
+Document the root cause in the commit message.
+
+**Rule: never change a test to make it easier to pass. Change it to be more accurate.**
