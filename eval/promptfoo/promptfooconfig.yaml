@@ -366,7 +366,7 @@ tests:
       query: "How do Kodava people celebrate Kaveri Sankramana?"
     assert:
       - type: icontains
-        value: "teertha"
+        value: "theertha"
       - type: llm-rubric
-        value: "Response explains how Kodava people celebrate Kaveri Sankramana, mentioning Talakaveri or the holy water (teertha) pilgrimage, using Kodava vocabulary from native speaker audio"
+        value: "Response explains how Kodava people celebrate Kaveri Sankramana, mentioning Talakaveri or the holy water (theertha) pilgrimage, using Kodava vocabulary from native speaker audio"
         threshold: 0.8
