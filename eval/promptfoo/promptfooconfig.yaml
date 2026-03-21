@@ -190,3 +190,24 @@ tests:
         value: "output.length < 1200"
       - type: icontains
         value: "polaaka"
+
+  # ── SUITE 7: Branch-specific improvements ────────────────────────────────────
+  # These tests verify capabilities that require the branch fixes to pass.
+  # They FAIL on main and PASS on the branch.
+
+  - description: "Kannada-script query resolves (requires Kannada in BM25 index)"
+    vars:
+      query: "ಮನೆ ಅಂದ್ರೆ ಏನು Kodava ಅಲ್ಲಿ?"
+    assert:
+      - type: icontains
+        value: "mane"
+      - type: llm-rubric
+        value: "The response correctly identifies ಮನೆ as 'mane' meaning house or home in Kodava, and the explanation is in English"
+        threshold: 0.85
+
+  - description: "LL phoneme — Kannada ಳ character present in answer"
+    vars:
+      query: "What does the phoneme LL map to in Kannada script?"
+    assert:
+      - type: icontains
+        value: "ಳ"
