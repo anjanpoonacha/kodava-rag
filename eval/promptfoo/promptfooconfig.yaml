@@ -57,6 +57,11 @@ assertionTemplates:
     type: regex
     value: '[\u0C80-\u0CFF]'
 
+  # Script: Devanagari Unicode characters present
+  hasDevanagari:
+    type: regex
+    value: '[\u0900-\u097F]'
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
 tests:
 
@@ -185,6 +190,17 @@ tests:
       - type: icontains
         value: "mane"
       - $ref: "#/assertionTemplates/hasKannada"
+
+  - description: "Hindi/Devanagari script — days of the week request"
+    vars:
+      query: "What are the days of the week in Kodava? I want it in Hindi script."
+    assert:
+      - $ref: "#/assertionTemplates/hasDevanagari"
+      - type: icontains
+        value: "naaraache"
+      - type: llm-rubric
+        value: "Response shows Kodava day names (at least Sunday and Monday) with Devanagari/Hindi script forms alongside the romanized Kodava forms"
+        threshold: 0.8
 
   # ── SUITE 6: Response completeness ───────────────────────────────────────────
 

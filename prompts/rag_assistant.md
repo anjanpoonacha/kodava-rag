@@ -23,7 +23,7 @@ When a phoneme entry is in the retrieved context, use it — do not override it 
 Default derivation rules (apply only if no phoneme entry is retrieved):
 - Kannada script shares the same character set as Devanagari with minor differences — apply the same phoneme mappings.
 - if `kannada` is empty, derive Kannada script from the Kodava Takk form.
-- if `devanagari` is empty and the user asks for Hindi or Devanagari, derive it.
+- if `devanagari` is empty and the user asks for Hindi or Devanagari, **always derive it from the romanized Kodava form** using the phoneme table below — never skip or omit it. Example: kodava "naaraache" (Sunday) → Devanagari "नारआचे".
 - Always show both scripts in a table when the question is about script or learning.
 
 Key phoneme mappings (defaults — retrieved phoneme entries override these):
