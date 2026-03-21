@@ -18,28 +18,42 @@ from pathlib import Path
 import config
 
 
-def sync_source_files() -> None:
-    """Pull the latest thakk commits into the data/thakk submodule.
+_THAKK_REPO = "https://github.com/anjanpoonacha/thakk.git"
 
-    Equivalent to: git submodule update --remote --merge data/thakk
-    Run this before every corpus build to ensure the latest language data is used.
+
+def sync_source_files() -> None:
+    """Ensure data/thakk/ is present and up to date.
+
+    Local dev  — data/thakk is a git submodule: runs git submodule update --remote.
+    Container  — data/thakk is absent (excluded from image): shallow-clones from GitHub.
     """
     submodule = config.DATA / "thakk"
-    if not submodule.exists():
-        raise RuntimeError(
-            "data/thakk submodule is missing — run: git submodule update --init data/thakk"
-        )
 
+    if not submodule.exists():
+        # Container startup — clone fresh from GitHub (repo is public, no token needed)
+        print(f"  cloning thakk from {_THAKK_REPO} ...")
+        result = subprocess.run(
+            ["git", "clone", "--depth", "1", _THAKK_REPO, str(submodule)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"git clone failed:\n{result.stderr}")
+        print("  thakk cloned")
+        return
+
+    # Local dev — update the submodule to latest main
     result = subprocess.run(
         ["git", "submodule", "update", "--remote", "--merge", "data/thakk"],
-        cwd=submodule.parent.parent,  # repo root
+        cwd=submodule.parent.parent,
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
-        raise RuntimeError(f"submodule update failed:\n{result.stderr}")
+        print("  thakk submodule update skipped (git unavailable)")
+        return
 
-    print(f"  thakk submodule updated to latest main")
+    print("  thakk submodule updated to latest main")
 
 
 def _api_url(repo_path: str) -> str:
