@@ -83,22 +83,28 @@ def build():
     sync_source_files()
     print("Building corpus...")
 
-    # Seed sentences bucket with existing hand-verified entries so they are
-    # never dropped — textbook-derived sentences are added after deduplication.
-    existing_sentences, seen = _load_existing_sentences()
-
-    # Load hand-authored seeds (derivation examples, curated entries)
-    seed_entries, seed_ids = _load_seeds()
-    seen.update(seed_ids)
+    # Seeds take highest priority — load first so their IDs block duplicates
+    # from existing_sentences and ingested data.
+    seed_entries, seen = _load_seeds()
     print(f"  seeds: {len(seed_entries)} entries loaded from data/seeds/")
 
+    # Preserve hand-verified sentences — skip any whose ID is already claimed by a seed
+    existing_sentences, _ = _load_existing_sentences()
+
     buckets: dict[str, list[dict]] = {k: [] for k in COLLECTIONS}
-    buckets["sentence"].extend(existing_sentences)
-    # Distribute seeds into their respective collection buckets
+    # Distribute seeds into their respective collection buckets first
     for entry in seed_entries:
         col_type = entry.get("type", "")
         if col_type in buckets:
             buckets[col_type].append(entry)
+    # Then add existing sentences that don't conflict with seeds
+    for entry in existing_sentences:
+        eid = entry.get("id")
+        if eid and eid in seen:
+            continue
+        buckets["sentence"].append(entry)
+        if eid:
+            seen.add(eid)
 
     warnings = 0
 
