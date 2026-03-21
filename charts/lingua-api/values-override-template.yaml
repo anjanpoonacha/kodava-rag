@@ -1,0 +1,31 @@
+# Override template — copy and fill in for a new environment.
+# Usage:
+#   cp charts/lingua-api/values-override-template.yaml charts/lingua-api/values-<env>.yaml
+#   helm upgrade --install lingua-api ./charts/lingua-api -f charts/lingua-api/values-<env>.yaml
+
+namespace: ""
+
+registry: ""           # e.g. ghcr.io/myorg  |  docker.io/myuser  |  <corp>.repositories.cloud.sap/team
+imagePullSecret: ""    # name of the k8s secret holding registry credentials
+
+app:
+  # tag: "1.2.3"       # pin to a specific image tag
+  host: ""             # public hostname for the APIRule / Ingress
+
+# Per-image registry overrides (optional — leave empty to use top-level registry)
+# app:
+#   registry: ghcr.io/myorg
+# approuter:
+#   registry: docker.io/myuser
+# proxy:
+#   registry: myregistry.example.com
+
+xsuaa:
+  xsappname: ""
+  redirectUri: ""      # https://<host>/**
+
+# Pre-requisite secrets — create before first deploy, never in values files:
+#   kubectl create secret generic lingua-api-secrets \
+#     --from-literal=ANTHROPIC_API_KEY=unused -n <namespace>
+#   kubectl create secret generic aicore-binding \
+#     --from-literal=credentials='<aicore-json>' -n <namespace>

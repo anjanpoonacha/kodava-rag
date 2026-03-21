@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lingua-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: lingua-api
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lingua-api
+  template:
+    metadata:
+      labels:
+        app: lingua-api
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecret }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: lingua-api
+          image: {{ include "lingua-api.image" (dict "values" .Values.app "root" .) }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.app.port }}
+          env:
+            - name: ANTHROPIC_BASE_URL
+              value: "http://sap-ai-proxy:{{ .Values.proxy.port }}"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lingua-api-secrets
+                  key: ANTHROPIC_API_KEY
+            - name: PROMPT_FETCH
+              value: {{ .Values.app.promptFetch | default "true" | quote }}
+            - name: PROMPT_REPO
+              value: {{ .Values.app.promptRepo | default "anjanpoonacha/kodava-rag" | quote }}
+            - name: PROMPT_BRANCH
+              value: {{ .Values.app.promptBranch | default "main" | quote }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.app.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.app.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: {{ .Values.app.resources.requests.memory }}
+              cpu: {{ .Values.app.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.app.resources.limits.memory }}
+              cpu: {{ .Values.app.resources.limits.cpu }}
+        - name: approuter
+          image: {{ include "lingua-api.image" (dict "values" .Values.approuter "root" .) }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.approuter.port }}
+          env:
+            - name: PORT
+              value: {{ .Values.approuter.port | quote }}
+            - name: destinations
+              value: '[{"name":"lingua-api-backend","url":"http://localhost:{{ .Values.app.port }}","forwardAuthToken":true}]'
+            - name: SERVICE_BINDING_ROOT
+              value: /bindings
+          volumeMounts:
+            - name: xsuaa-binding
+              mountPath: /bindings/xsuaa/
+              readOnly: true
+            - name: approuter-config
+              mountPath: /app/xs-app.json
+              subPath: xs-app.json
+              readOnly: true
+          resources:
+            requests:
+              memory: {{ .Values.approuter.resources.requests.memory }}
+              cpu: {{ .Values.approuter.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.approuter.resources.limits.memory }}
+              cpu: {{ .Values.approuter.resources.limits.cpu }}
+      volumes:
+        - name: xsuaa-binding
+          secret:
+            secretName: {{ .Values.xsuaa.bindingName }}
+        - name: approuter-config
+          configMap:
+            name: lingua-api-approuter

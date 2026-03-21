@@ -1,0 +1,28 @@
+apiVersion: gateway.kyma-project.io/v2
+kind: APIRule
+metadata:
+  name: lingua-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: lingua-api
+    app.kubernetes.io/managed-by: Helm
+spec:
+  gateway: kyma-system/kyma-gateway
+  hosts:
+    - {{ .Values.app.host }}
+  service:
+    name: lingua-api
+    port: {{ .Values.approuter.port }}
+  rules:
+    - path: /health
+      methods: ["GET"]
+      noAuth: true
+      service:
+        name: lingua-api
+        port: {{ .Values.app.port }}
+    - path: /
+      methods: ["GET"]
+      noAuth: true
+    - path: /{**}
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+      noAuth: true
