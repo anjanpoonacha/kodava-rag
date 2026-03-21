@@ -16,6 +16,9 @@ import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
 import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
 import ingesters.elementary_kodava  # noqa: F401 — registers ElementaryKodavaIngester
 import ingesters.training_data  # noqa: F401 — registers TrainingDataIngester
+
+# TranscriptionIngester is NOT registered here — it runs on-demand via ingest_session.py
+# and writes its output to data/thakk/corpus/sentences.jsonl (picked up by corpus_jsonl.py)
 from ingesters import REGISTRY
 
 THAKK = DATA / "thakk"  # git submodule — source of truth

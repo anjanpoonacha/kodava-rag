@@ -207,9 +207,28 @@ def augment_query(query: str) -> str:
     return query
 
 
+def _search_threads(query: str) -> list[dict]:
+    """Targeted search for paragraph thread entries — bypasses confidence reranking
+    so audio_source threads are not buried under verified vocabulary hits."""
+    bm25, docs = _load("sentences")
+    if bm25 is None:
+        return []
+    tokens = _tokenize(query)
+    scores = bm25.get_scores(tokens)
+    top = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[
+        :BM25_CANDIDATES
+    ]
+    # Only return entries tagged as paragraph threads
+    return [
+        docs[i] for i in top if scores[i] > 0 and "paragraph" in docs[i].get("tags", [])
+    ][:2]  # at most 2 threads per composition query
+
+
 def search_all(query: str) -> list[dict]:
     """Layered retrieval across all collections.
 
+    Layer 0 (threads): for composition queries, inject the top matching
+      paragraph thread directly so confidence reranking cannot bury it.
     Layer 1 (phrase): full-query BM25 per collection, highest priority.
     Layer 2 (token voting): per-token fan-out for collections where Layer 1
       returns fewer than WORD_SEARCH_THRESHOLD hits.
@@ -231,6 +250,10 @@ def search_all(query: str) -> list[dict]:
             if doc_id:
                 seen_ids.add(doc_id)
             added += 1
+
+    # Layer 0: inject top paragraph thread for composition queries
+    if "paragraph" in query.lower():
+        _add(_search_threads(query), 2)
 
     for col in ("sentences", "grammar_rules", "vocabulary", "phonemes"):
         try:

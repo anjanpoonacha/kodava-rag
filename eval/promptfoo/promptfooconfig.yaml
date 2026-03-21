@@ -319,3 +319,35 @@ tests:
       - type: llm-rubric
         value: "Response shows at least two Kodava sentences connected by pinynya (then/after that/next), with English gloss for each sentence"
         threshold: 0.8
+
+  # ── SUITE 10: Transcription paragraph threads (audio_source) ─────────────────
+
+  - description: "Kaveri thread — festival paragraph from native speaker audio"
+    vars:
+      query: "Write a paragraph about the Kaveri Sankramana festival in Kodava."
+    assert:
+      - type: icontains
+        value: "Kaavêri"
+      - type: llm-rubric
+        value: "Response presents a connected Kodava passage about the Kaveri festival or Changrandi, sourced from native speaker audio (audio_source or verified), with Kodava sentences and English translations. The passage may cover the date, celebration, or significance of the festival."
+        threshold: 0.8
+
+  - description: "Kaveri thread — when does Changrandi happen"
+    vars:
+      query: "When does Kaveri Changrandi happen? Explain in Kodava."
+    assert:
+      - type: icontains
+        value: "Tholeyaar"
+      - type: llm-rubric
+        value: "Response mentions the Kodava month Tholeyaar and explains when Kaveri Sankramana occurs, with Kodava phrases from the corpus"
+        threshold: 0.8
+
+  - description: "Kaveri sentence — pilgrimage to Talakaveri"
+    vars:
+      query: "How do Kodava people celebrate Kaveri Sankramana?"
+    assert:
+      - type: icontains
+        value: "teertha"
+      - type: llm-rubric
+        value: "Response explains how Kodava people celebrate Kaveri Sankramana, mentioning Talakaveri or the holy water (teertha) pilgrimage, using Kodava vocabulary from native speaker audio"
+        threshold: 0.8
