@@ -41,6 +41,6 @@ fi
 
 # ── 3. Push — submodule first (on-demand), then parent ───────────────────────
 echo "→ pushing..."
-git push
+git push origin main
 
 echo "✓ done"
