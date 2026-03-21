@@ -172,6 +172,20 @@ helm upgrade --install lingua-api ./charts/lingua-api \
 cd eval/promptfoo && promptfoo eval
 ```
 
+### Run a single test
+
+Use `--filter-description` with a substring of the test's `description` field:
+
+```bash
+# LLM eval — match by partial description (case-insensitive)
+cd eval/promptfoo && promptfoo eval --filter-description "house"
+
+# Retrieval eval — same flag works
+cd eval/promptfoo && promptfoo eval --config promptfooconfig.retrieval.yaml --filter-description "mane"
+```
+
+The flag accepts a plain string (substring match) or a `/regex/` pattern.
+
 ---
 
 ## Language Rules (Kodava Takk)
