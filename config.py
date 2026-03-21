@@ -20,3 +20,9 @@ WORD_SEARCH_THRESHOLD = (
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 GITHUB_REPO = os.getenv("GITHUB_REPO", "anjanpoonacha/thakk")
 GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
+
+# System prompt hot-loading — fetch from GitHub on container startup.
+# Set PROMPT_FETCH=false for local dev/CI to avoid network dependency.
+PROMPT_REPO = os.getenv("PROMPT_REPO", "anjanpoonacha/kodava-rag")
+PROMPT_BRANCH = os.getenv("PROMPT_BRANCH", "main")
+PROMPT_FETCH = os.getenv("PROMPT_FETCH", "false").lower() == "true"
