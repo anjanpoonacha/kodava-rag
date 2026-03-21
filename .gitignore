@@ -1,7 +1,7 @@
 data/*.db
-data/processed/
 data/raw/
 data/corpus/*.jsonl
+eval/promptfoo/test_native.yaml
 __pycache__/
 .env
 eval/promptfoo/.env

@@ -1,0 +1,3 @@
+[submodule "data/thakk"]
+	path = data/thakk
+	url = https://github.com/anjanpoonacha/thakk.git
