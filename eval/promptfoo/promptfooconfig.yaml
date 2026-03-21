@@ -81,6 +81,19 @@ tests:
       - type: llm-rubric
         value: "Response does not invent a Kodava translation for Jupiter"
         threshold: 0.9
+      # beaLaache is Thursday; its etymology (beaLa = Jupiter's day) must not
+      # be presented as a standalone translation of the planet Jupiter.
+      - type: icontains
+        value: "not in the corpus"
+      - type: not-icontains
+        value: "beaLaache is the Kodava word for Jupiter"
+      - type: not-icontains
+        value: "beaLa is the Kodava word for Jupiter"
+      - type: not-icontains
+        value: "beaLa** is the Kodava word"
+      - type: llm-rubric
+        value: "Response states Jupiter is not in the corpus as a standalone word. It may mention beaLaache (Thursday) as an etymological connection, but must NOT present beaLa or beaLaache as the Kodava translation of the planet Jupiter."
+        threshold: 0.9
 
   - description: "No borrowed vocabulary — must not substitute Hindi/Urdu"
     vars:
@@ -153,25 +166,28 @@ tests:
       - type: icontains
         value: "poan"
 
-  - description: "Dative suffix — sante'k"
+  - description: "Dative suffix — chatthe'k (market + dative 'k)"
     vars:
       query: "How do I say 'to the market' in Kodava?"
     assert:
       - type: icontains
-        value: "sante"
+        value: "chatthe"
       - type: icontains
         value: "'k"
 
-  - description: "Hungry — kela baip'w not hasi"
+  - description: "Hungry — kela bayippa not hasi"
     vars:
       query: "I am hungry."
     assert:
       - type: icontains
         value: "kela"
       - type: icontains
-        value: "baip"
+        # corpus form: Kela bayippa (audio_source verified)
+        value: "bayipp"
+      - type: not-icontains
+        value: "hasi"
       - type: llm-rubric
-        value: "Response uses 'kela baip'w' or 'kela baichaind'und' for 'I am hungry' and does NOT use 'hasi' as the word for hunger"
+        value: "Response uses 'Kela bayippa' or similar kela-based expression for 'I am hungry' and does NOT use 'hasi' as the word for hunger"
         threshold: 0.9
 
   - description: "Numbers 1-10 — ondh through pathth"
@@ -183,7 +199,7 @@ tests:
       - type: icontains
         value: "pathth"
       - type: llm-rubric
-        value: "Response lists Kodava numbers from 1 to 10 with their romanized forms (ondh=1, dhand=2, muundh=3, naal=4, anjii=5, aar=6, eeL=7, ett=8, woyimbadh=9, pathth=10)"
+        value: "Response lists Kodava numbers from 1 to 10. All ten numbers are present. The forms may vary slightly (ondh/ondhu=1, dhand=2, muundh=3, naal=4, anji/anjii=5, aar=6, eeL/eaLu/eeL=7, ett=8, woyimbadh=9, pathth/patt=10) — accept any attested variant."
         threshold: 0.8
 
   - description: "Cooking verb — adige maaduw'k surfaces for English cook query"
@@ -283,7 +299,7 @@ tests:
       query: "How do I say 'I went to the market' in Kodava?"
     assert:
       - type: icontains
-        value: "sante"
+        value: "chatthe"
       - type: context-faithfulness
         contextTransform: "JSON.stringify(context.metadata?.context ?? [])"
         threshold: 0.6
@@ -391,3 +407,59 @@ tests:
       - type: llm-rubric
         value: "Response translates 'how to cook' using the Kodava words ennane (how) and adige maaduva or adige maaduwk (to cook), without inventing vocabulary not in the corpus"
         threshold: 0.8
+
+  # ── TDD regression: corpus-gap response must be clean (no speculation) ─────────
+  # Root cause: model was saying "not in the corpus" correctly but then adding
+  # unprompted speculation about loanwords, everyday speech, and growth tips.
+  # Correct behaviour: state the gap, stop. No speculation, no tips.
+
+  - description: "corpus gap — refrigerator: must state gap and stop, no speculation about loanwords"
+    vars:
+      query: "How do I say refrigerator in Kodava?"
+    assert:
+      - type: icontains
+        value: "not in the corpus"
+      - type: not-icontains
+        value: "loanword"
+      - type: not-icontains
+        value: "everyday"
+      - type: not-icontains
+        value: "Tip"
+      - type: llm-rubric
+        value: "Response states that refrigerator is not in the corpus and stops there — it does not speculate about possible loanwords, everyday Kodava usage, or offer tips about contributing to the corpus"
+        threshold: 0.9
+
+  - description: "corpus gap — helicopter: clean refusal, no loanword speculation"
+    vars:
+      query: "What is the Kodava word for helicopter?"
+    assert:
+      - type: icontains
+        value: "not in the corpus"
+      - type: not-icontains
+        value: "loanword"
+      - type: not-icontains
+        value: "everyday"
+      - type: llm-rubric
+        value: "Response states that helicopter is not in the corpus and does not invent a word or speculate about possible loanword usage"
+        threshold: 0.9
+
+  # ── TDD regression: conjugation must use ⚠️ on derived forms ─────────────────
+  # Root cause: model was presenting conjugation tables without ⚠️ on forms
+  # derived by rule rather than directly attested in corpus.
+  # Correct behaviour: ⚠️ on derived forms, 🟡 on textbook-sourced pattern.
+
+  - description: "conjugation — past tense of maaduwk must flag derived form with ⚠️"
+    vars:
+      query: "What is the past tense of adige maaduva?"
+    assert:
+      - type: icontains
+        value: "⚠️"
+      - type: icontains
+        value: "maad"
+      - type: not-icontains
+        value: "probably"
+      - type: not-icontains
+        value: "likely"
+      - type: llm-rubric
+        value: "Response derives the past tense form, marks it ⚠️ because it is inferred by rule not directly attested, and does not hedge with words like 'probably' or 'likely'"
+        threshold: 0.9

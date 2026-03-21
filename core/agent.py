@@ -41,38 +41,52 @@ logger = logging.getLogger(__name__)
 # Tool definition
 # ---------------------------------------------------------------------------
 
-_COLLECTIONS = ["vocabulary", "sentences", "grammar_rules", "phonemes"]
+_COLLECTIONS = [
+    "vocabulary",
+    "sentences_lesson",
+    "sentences_narrative",
+    "grammar_rules",
+    "phonemes",
+]
 
-# Tool description hot-loaded from prompts/search_agent.md — same pattern as
-# rag_assistant.md.  Loaded once at import time; restart the server (or
-# kubectl rollout restart) to pick up prompt changes in production.
-_SEARCH_TOOL_DESC: str = load_prompt("search_agent")
 
-_SEARCH_TOOL_DICT: dict[str, Any] = {
-    "name": "search_kodava",
-    "description": _SEARCH_TOOL_DESC,
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": (
-                    "Search query. Prefer short keyword forms over full "
-                    "natural-language sentences — BM25 scores are higher on "
-                    "focused tokens. Examples: 'morning', 'past tense suffix', "
-                    "'naan poane', 'LL phoneme'."
-                ),
+def _build_search_tool() -> dict[str, Any]:
+    """Build the search tool definition, loading the prompt fresh each call.
+
+    Loading per-call (instead of once at import) means prompt edits to
+    search_agent.md are picked up without restarting the server — matching
+    the same hot-reload behaviour as rag_assistant.md.
+    """
+    return {
+        "name": "search_kodava",
+        "description": load_prompt("search_agent"),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "Search query. Prefer short keyword forms over full "
+                        "natural-language sentences — BM25 scores are higher on "
+                        "focused tokens. Examples: 'morning', 'past tense suffix', "
+                        "'naan poane', 'LL phoneme'."
+                    ),
+                },
+                "collection": {
+                    "type": "string",
+                    "enum": _COLLECTIONS,
+                    "description": "Target a single collection. Omit to search all.",
+                },
             },
-            "collection": {
-                "type": "string",
-                "enum": _COLLECTIONS,
-                "description": "Target a single collection. Omit to search all.",
-            },
+            "required": ["query"],
         },
-        "required": ["query"],
-    },
-}
-SEARCH_TOOL: ToolParam = cast(ToolParam, _SEARCH_TOOL_DICT)
+    }
+
+
+def _search_tool() -> ToolParam:
+    """Return the search tool with a freshly loaded prompt description."""
+    return cast(ToolParam, _build_search_tool())
+
 
 # ---------------------------------------------------------------------------
 # Trace dataclass (returned by run_with_trace for evals / logging)
@@ -161,7 +175,7 @@ def _agent_loop(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=system,
-            tools=[SEARCH_TOOL],
+            tools=[_search_tool()],
             messages=messages,  # type: ignore[arg-type]
         )
 
