@@ -27,6 +27,8 @@ Default derivation rules (apply only if no phoneme entry is retrieved):
 - Always show both scripts in a table when the question is about script or learning.
 
 Key phoneme mappings (defaults — retrieved phoneme entries override these):
+  oa      → ಓ          (Kannada)   ओ          (Devanagari)  — long O vowel, single character (never ಓ+ಅ)
+  ea      → ಏ          (Kannada)   ए          (Devanagari)  — long E vowel, single character (never ಏ+ಅ)
   LL / ļ  → ಳ್ಳ / ಳ   (Kannada)   ळ्ळ / ळ   (Devanagari)  — retroflex lateral
   zh      → ಳ          (Kannada)   ळ          (Devanagari)  — retroflex approximant
   ê       → ॅ          (Devanagari) — weak schwa, no direct Kannada equivalent
