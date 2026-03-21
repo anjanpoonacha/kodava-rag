@@ -215,6 +215,22 @@ _COMPOSITION_KEYWORDS = frozenset(
     }
 )
 
+# Maps query keywords → corpus topic tags.
+# Layer 0 uses this to inject all paragraph threads for a topic when any
+# query token matches a key — bypassing BM25 length-normalisation bias that
+# causes short flashcards (2–11 tokens) to outrank long narratives (750 tokens).
+_TOPIC_TAG_MAP: dict[str, str] = {
+    "kaveri": "kaveri_sankramana",
+    "kaaveri": "kaveri_sankramana",
+    "changrandi": "kaveri_sankramana",
+    "changraandi": "kaveri_sankramana",
+    "sankramana": "kaveri_sankramana",
+    "shankramana": "kaveri_sankramana",
+    "kailpodh": "kailpodh",
+    "puttari": "puttari",
+    "puthari": "puttari",
+}
+
 
 def augment_query(query: str) -> str:
     """Append 'paragraph' to composition queries so BM25 surfaces thread entries."""
@@ -225,10 +241,36 @@ def augment_query(query: str) -> str:
     return query
 
 
+def _topic_threads(query_tokens: list[str]) -> list[dict]:
+    """Return all paragraph threads whose topic tag matches a query token.
+
+    Pure tag lookup — no BM25. Avoids length-normalisation bias entirely.
+    Uses sentences_narrative as the source since paragraph threads live there.
+    """
+    matched_topics: set[str] = set()
+    for token in query_tokens:
+        topic = _TOPIC_TAG_MAP.get(token.lower())
+        if topic:
+            matched_topics.add(topic)
+    if not matched_topics:
+        return []
+
+    _, docs = _load("sentences_narrative")
+    return [
+        d
+        for d in docs
+        if "paragraph" in d.get("tags", [])
+        and any(t in matched_topics for t in d.get("tags", []))
+    ]
+
+
 def _search_threads(query: str) -> list[dict]:
-    """Targeted search for paragraph thread entries — bypasses confidence reranking
-    so audio_source threads are not buried under verified vocabulary hits."""
-    bm25, docs = _load("sentences")
+    """BM25-based paragraph thread search for composition queries.
+
+    Searches sentences_narrative so that lesson flashcards cannot crowd out
+    narrative paragraph entries. Only paragraph-tagged entries are returned.
+    """
+    bm25, docs = _load("sentences_narrative")
     if bm25 is None:
         return []
     tokens = _tokenize(query)
@@ -236,39 +278,44 @@ def _search_threads(query: str) -> list[dict]:
     top = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[
         :BM25_CANDIDATES
     ]
-    # Only return entries tagged as paragraph threads
     return [
         docs[i] for i in top if scores[i] > 0 and "paragraph" in docs[i].get("tags", [])
-    ][:2]  # at most 2 threads per composition query
+    ][:4]
+
+
+def _is_paragraph(doc: dict) -> bool:
+    return "paragraph" in doc.get("tags", [])
 
 
 def search_all(query: str) -> list[dict]:
     """Layered retrieval across all collections.
 
-    Layer 0 (threads): for composition queries, inject the top matching
-      paragraph thread directly so confidence reranking cannot bury it.
+    Layer 0a (topic threads): when query tokens match a known topic tag, inject
+      all paragraph threads for that topic directly — tag lookup, no BM25.
+      Fixes zero-score cases like 'How do Kodavas celebrate Changrandi?' where
+      BM25 length normalisation buries 750-token paragraphs behind 2-token
+      flashcards.
+    Layer 0b (composition threads): for 'write a paragraph' style queries,
+      inject the top BM25-ranked paragraph threads from sentences_narrative.
     Layer 1 (phrase): full-query BM25 per collection, highest priority.
     Layer 2 (token voting): per-token fan-out for collections where Layer 1
       returns fewer than WORD_SEARCH_THRESHOLD hits.
 
-    Each collection is allocated its own independent slot budget so that a
-    high-scoring but irrelevant collection (e.g. sentences matching common
-    query words) cannot consume the entire TOP_K budget and starve
-    vocabulary. Results are deduplicated by id and capped at TOP_K.
+    sentences_lesson and sentences_narrative are searched independently so
+    the two populations (avg 11 tokens vs avg 750 tokens) never compete in
+    the same BM25 index. sentences_lesson handles grammar/phrase lookup;
+    sentences_narrative handles topic knowledge and audio content.
     """
-    # Per-collection slot budgets. vocabulary gets more slots because word
-    # lookup queries must surface specific lexical entries that may rank below
-    # generic action-word patterns in the BM25 list.
     COL_CAPS = {
-        "sentences": 3,
+        "sentences_lesson": 2,
+        "sentences_narrative": 4,
         "grammar_rules": 3,
         "vocabulary": 5,
         "phonemes": 2,
-        "_threads": 2,
+        "_threads": 4,  # raised from 2 — matches max sections per topic (4)
     }
     seen_ids: set = set()
 
-    # Collect results per-collection independently before merging.
     per_col: dict[str, list[dict]] = {}
 
     def _collect(docs: list[dict], col: str, cap: int) -> None:
@@ -283,36 +330,49 @@ def search_all(query: str) -> list[dict]:
             if doc_id:
                 seen_ids.add(doc_id)
 
-    # Layer 0: inject top paragraph thread for composition queries
-    if "paragraph" in query.lower():
+    query_tokens = _tokenize(query)
+
+    # Layer 0a: topic-tag thread injection (no BM25, pure tag lookup)
+    topic_hits = _topic_threads(query_tokens)
+    if topic_hits:
+        _collect(topic_hits, "_threads", COL_CAPS["_threads"])
+
+    # Layer 0b: composition paragraph injection (BM25 over narrative collection)
+    elif "paragraph" in query.lower():
         _collect(_search_threads(query), "_threads", COL_CAPS["_threads"])
 
-    for col in ("sentences", "grammar_rules", "vocabulary", "phonemes"):
+    for col in (
+        "sentences_lesson",
+        "sentences_narrative",
+        "grammar_rules",
+        "vocabulary",
+        "phonemes",
+    ):
         phrase_cap = COL_CAPS.get(col, 3)
         try:
-            # Layer 1: phrase-level BM25
             phrase_hits = search(query, col)
+
+            # Paragraph threads are managed exclusively by Layer 0.
+            # Exclude them from Layer 1 so they don't bleed into unrelated
+            # queries via BM25 — their size (750 tokens) gives them
+            # artificially high scores on any query containing common words.
+            if col == "sentences_narrative":
+                phrase_hits = [d for d in phrase_hits if not _is_paragraph(d)]
+
             _collect(phrase_hits, col, phrase_cap)
 
-            # Layer 2: token voting — always run for vocabulary so that
-            # content-specific terms (e.g. "cook") can surface entries that
-            # rank below the phrase-level cap due to competing generic patterns.
-            # Token voting gets its own additive cap so it is never crowded out
-            # by phrase hits that already filled the bucket.
-            # For other collections, run only when phrase search is thin.
             if col == "vocabulary" or len(phrase_hits) < WORD_SEARCH_THRESHOLD:
                 token_hits = search_by_tokens(query, col)
-                token_cap = phrase_cap if col == "vocabulary" else phrase_cap
-                _collect(token_hits, col + "_tokens", token_cap)
+                if col == "sentences_narrative":
+                    token_hits = [d for d in token_hits if not _is_paragraph(d)]
+                _collect(token_hits, col + "_tokens", phrase_cap)
         except FileNotFoundError:
             pass
 
-    # Merge: threads first, then interleave phrase hits and token hits so that
-    # content-specific vocabulary entries (from token voting) are not pushed
-    # beyond TOP_K by generic phrase matches from other collections.
     ordered_cols = [
         "_threads",
-        "sentences",
+        "sentences_narrative",
+        "sentences_lesson",
         "grammar_rules",
         "vocabulary",
         "vocabulary_tokens",

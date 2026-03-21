@@ -33,6 +33,13 @@ COLLECTIONS = {
     "sentence": CORPUS / "sentences.jsonl",
 }
 
+# Derived sentence sub-collections written after the main build.
+# Lesson Q&A flashcards (lesson:N tagged) live separately from narrative/audio
+# content so BM25 length normalisation does not pit 2-token flashcards against
+# 750-token transcription paragraphs in the same index.
+SENTENCE_LESSON = CORPUS / "sentences_lesson.jsonl"
+SENTENCE_NARRATIVE = CORPUS / "sentences_narrative.jsonl"
+
 
 def _load_existing_sentences() -> tuple[list[dict], set[str]]:
     """Load hand-verified sentences preserved across builds."""
@@ -127,6 +134,32 @@ def build():
             for e in entries:
                 f.write(json.dumps(e, ensure_ascii=False) + "\n")
         print(f"  {out_path.name}: {len(entries)}")
+
+    # Post-process sentences: split into lesson flashcards vs narrative content.
+    #
+    # lesson:N tagged entries are short Q&A pairs (avg 11 tokens) from the
+    # textbook. Narrative entries include audio transcription paragraphs (avg
+    # 750 tokens) and individual transcription sentences. Keeping them in
+    # separate BM25 indexes prevents short flashcards from outranking long
+    # paragraphs via length-normalisation bias.
+    sentences = buckets["sentence"]
+    lesson_entries = [
+        e for e in sentences if any(t.startswith("lesson:") for t in e.get("tags", []))
+    ]
+    narrative_entries = [
+        e
+        for e in sentences
+        if not any(t.startswith("lesson:") for t in e.get("tags", []))
+    ]
+    for out_path, entries in (
+        (SENTENCE_LESSON, lesson_entries),
+        (SENTENCE_NARRATIVE, narrative_entries),
+    ):
+        with open(out_path, "w", encoding="utf-8") as f:
+            for e in entries:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
+        label = out_path.name
+        print(f"  {label}: {len(entries)}")
 
     # review.jsonl is never overwritten by the build
     review = CORPUS / "review.jsonl"
