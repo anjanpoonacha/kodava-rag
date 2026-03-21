@@ -27,6 +27,15 @@ git worktree add ../kodava-rag-helm feat/helm-configurable-registry
 git worktree add ../kodava-rag-kyma deploy/kyma
 ```
 
+**Staying up to date — merge, never rebase:**
+```bash
+# Pull app changes into helm chart branch
+cd ../kodava-rag-helm && git merge main
+
+# Pull helm chart changes into kyma branch
+cd ../kodava-rag-kyma && git merge feat/helm-configurable-registry
+```
+
 **Never push `deploy/kyma`** — it contains environment-specific values.
 
 ---
