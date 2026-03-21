@@ -285,3 +285,37 @@ tests:
     assert:
       - type: icontains
         value: "ಳ"
+
+  # ── SUITE 9: Paragraph composition capability ────────────────────────────────
+
+  - description: "Paragraph — daily routine mentor text with pinynya"
+    vars:
+      query: "Write a paragraph about my daily routine in Kodava."
+    assert:
+      - type: icontains
+        value: "pinynya"
+      - type: icontains
+        value: "palaaka"
+      - type: llm-rubric
+        value: "Response shows a connected Kodava passage of at least 3 sentences about a daily routine, using the connective pinynya (then/next), and presents it as a mentor text the learner can study and adapt"
+        threshold: 0.8
+
+  - description: "Paragraph — market passage with serii and sentence frame"
+    vars:
+      query: "I want to practice writing a paragraph about going to the market in Kodava."
+    assert:
+      - type: icontains
+        value: "serii"
+      - type: llm-rubric
+        value: "Response includes a Kodava market passage or sentence frame scaffold that the learner can use to practice composition, with at least one sentence containing verified Kodava vocabulary for market or shopping"
+        threshold: 0.8
+
+  - description: "Paragraph — connective pinynya used correctly in multi-sentence output"
+    vars:
+      query: "Show me how to use pinynya in a short Kodava paragraph."
+    assert:
+      - type: icontains
+        value: "pinynya"
+      - type: llm-rubric
+        value: "Response shows at least two Kodava sentences connected by pinynya (then/after that/next), with English gloss for each sentence"
+        threshold: 0.8
