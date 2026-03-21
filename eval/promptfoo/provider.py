@@ -1,15 +1,12 @@
 """
 Promptfoo Python provider for Kodava RAG.
 
-Wraps the full RAG pipeline (retrieval + LLM) so promptfoo can drive it
-with test cases and evaluate outputs end-to-end.
+Exported functions:
+  call_api(prompt, options, context)  — full RAG pipeline (retrieve + generate)
+  retrieve(prompt, options, context)  — BM25 retrieval only, no LLM call
 
-Two provider functions are exported:
-  call_api(prompt, options, context)  — full RAG (retrieve + generate)
-  retrieve(prompt, options, context)  — retrieval only (no LLM call)
-
-Promptfoo passes the rendered prompt string as `prompt`.
-Variables injected via the YAML config are available in context['vars'].
+Grading is handled by promptfoo's built-in Anthropic provider (no subprocess).
+See defaultTest.options.provider in promptfooconfig.yaml.
 """
 
 from __future__ import annotations
@@ -29,10 +26,10 @@ from core.llm import ask
 
 
 def call_api(prompt: str, options: dict, context: dict) -> dict:
-    """Retrieve context then generate an answer.
+    """Retrieve corpus context then generate an answer with Claude.
 
-    The `prompt` variable is the user query (rendered from the YAML template).
-    Returns a dict with `output` (answer string) and `metadata` (context hits).
+    Returns output (answer string) and metadata (context hits) so promptfoo
+    can run context-faithfulness assertions via contextTransform.
     """
     query = context.get("vars", {}).get("query", prompt)
     try:
@@ -53,24 +50,19 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
 
 
 def retrieve(prompt: str, options: dict, context: dict) -> dict:
-    """Return raw retrieval results without calling the LLM.
+    """Return raw BM25 retrieval results without calling the LLM.
 
-    Used to evaluate the retrieval layer in isolation.
-    Output is a JSON string of corpus entries for assertion matching.
+    Output is a JSON string of corpus entries so promptfoo icontains/regex
+    assertions can inspect it directly.
     """
     vars_ = context.get("vars", {})
     query = vars_.get("query", prompt)
     collection = vars_.get("collection", None)
 
     try:
-        if collection:
-            docs = search(query, collection)
-        else:
-            docs = search_all(query)
-
-        output = json.dumps(docs, ensure_ascii=False, indent=2)
+        docs = search(query, collection) if collection else search_all(query)
         return {
-            "output": output,
+            "output": json.dumps(docs, ensure_ascii=False, indent=2),
             "metadata": {"hits": len(docs)},
         }
     except Exception as exc:
