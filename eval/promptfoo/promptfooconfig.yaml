@@ -86,9 +86,10 @@ tests:
     vars:
       query: "What is the Kodava word for hospital?"
     assert:
-      - $ref: "#/assertionTemplates/corpusGuard"
+      - type: icontains
+        value: "aaspathre"
       - type: llm-rubric
-        value: "Response does not substitute a Hindi, Urdu, or Kannada loanword as authentic Kodava vocabulary"
+        value: "Response does not substitute a Hindi, Urdu, or Kannada loanword as authentic Kodava vocabulary. The correct Kodava word is aaspathre."
         threshold: 0.9
 
   # ── SUITE 2: Format compliance ────────────────────────────────────────────────
@@ -184,6 +185,24 @@ tests:
       - type: llm-rubric
         value: "Response lists Kodava numbers from 1 to 10 with their romanized forms (ondh=1, dhand=2, muundh=3, naal=4, anjii=5, aar=6, eeL=7, ett=8, woyimbadh=9, pathth=10)"
         threshold: 0.8
+
+  - description: "Cooking verb — adige maaduw'k surfaces for English cook query"
+    vars:
+      query: "What is the Kodava word for 'to cook'?"
+    assert:
+      - type: icontains
+        value: "adige"
+      - $ref: "#/assertionTemplates/hasTable"
+      - $ref: "#/assertionTemplates/hasKannada"
+
+  - description: "Cook today — adige found, not absent from corpus"
+    vars:
+      query: "What did you cook today?"
+    assert:
+      - type: not-icontains
+        value: "not in the corpus"
+      - type: icontains
+        value: "adige"
 
   # ── SUITE 4: Confidence flags ─────────────────────────────────────────────────
   # Note: 🟡 flag presence is tested structurally in eval/baseline.py
@@ -318,4 +337,36 @@ tests:
         value: "pinynya"
       - type: llm-rubric
         value: "Response shows at least two Kodava sentences connected by pinynya (then/after that/next), with English gloss for each sentence"
+        threshold: 0.8
+
+  # ── SUITE 10: Transcription paragraph threads (audio_source) ─────────────────
+
+  - description: "Kaveri thread — festival paragraph from native speaker audio"
+    vars:
+      query: "Write a paragraph about the Kaveri Sankramana festival in Kodava."
+    assert:
+      - type: icontains
+        value: "Kaavêri"
+      - type: llm-rubric
+        value: "Response presents a connected Kodava passage about the Kaveri festival or Changrandi, sourced from native speaker audio (audio_source or verified), with Kodava sentences and English translations. The passage may cover the date, celebration, or significance of the festival."
+        threshold: 0.8
+
+  - description: "Kaveri thread — when does Changrandi happen"
+    vars:
+      query: "When does Kaveri Changrandi happen? Explain in Kodava."
+    assert:
+      - type: icontains
+        value: "Tholeyaar"
+      - type: llm-rubric
+        value: "Response mentions the Kodava month Tholeyaar and explains when Kaveri Sankramana occurs, with Kodava phrases from the corpus"
+        threshold: 0.8
+
+  - description: "Kaveri sentence — pilgrimage to Talakaveri"
+    vars:
+      query: "How do Kodava people celebrate Kaveri Sankramana?"
+    assert:
+      - type: icontains
+        value: "theertha"
+      - type: llm-rubric
+        value: "Response explains how Kodava people celebrate Kaveri Sankramana, mentioning Talakaveri or the holy water (theertha) pilgrimage, using Kodava vocabulary from native speaker audio"
         threshold: 0.8

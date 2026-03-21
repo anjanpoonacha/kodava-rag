@@ -16,6 +16,9 @@ import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
 import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
 import ingesters.elementary_kodava  # noqa: F401 — registers ElementaryKodavaIngester
 import ingesters.training_data  # noqa: F401 — registers TrainingDataIngester
+
+# TranscriptionIngester is NOT registered here — it runs on-demand via ingest_session.py
+# and writes its output to data/thakk/corpus/sentences.jsonl (picked up by corpus_jsonl.py)
 from ingesters import REGISTRY
 
 THAKK = DATA / "thakk"  # git submodule — source of truth
@@ -103,6 +106,19 @@ def build():
         if path.parent == THAKK / "corpus" and path.suffix == ".jsonl":
             continue  # already processed in pass 1
         _ingest_path(path)
+
+    # Post-process: backfill empty explanation from english field so BM25 has
+    # at least one English token to match against for every vocabulary entry.
+    backfilled = 0
+    for entry in buckets.get("vocabulary", []):
+        if (
+            not entry.get("explanation", "").strip()
+            and entry.get("english", "").strip()
+        ):
+            entry["explanation"] = entry["english"]
+            backfilled += 1
+    if backfilled:
+        print(f"  backfilled explanation from english: {backfilled} vocabulary entries")
 
     # Write all collections
     for col_type, out_path in COLLECTIONS.items():
