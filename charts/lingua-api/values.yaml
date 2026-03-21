@@ -17,6 +17,9 @@ app:
   tag: latest
   port: 8000
   host: ""
+  promptFetch: "true"
+  promptRepo: "anjanpoonacha/kodava-rag"
+  promptBranch: "main"   # override per env in values-<env>.yaml
   resources:
     requests:
       memory: 512Mi

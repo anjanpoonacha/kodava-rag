@@ -35,6 +35,12 @@ spec:
                 secretKeyRef:
                   name: lingua-api-secrets
                   key: ANTHROPIC_API_KEY
+            - name: PROMPT_FETCH
+              value: {{ .Values.app.promptFetch | default "true" | quote }}
+            - name: PROMPT_REPO
+              value: {{ .Values.app.promptRepo | default "anjanpoonacha/kodava-rag" | quote }}
+            - name: PROMPT_BRANCH
+              value: {{ .Values.app.promptBranch | default "main" | quote }}
           livenessProbe:
             httpGet:
               path: /health
