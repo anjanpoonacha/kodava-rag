@@ -202,6 +202,17 @@ tests:
         value: "Response shows Kodava day names (at least Sunday and Monday) with Devanagari/Hindi script forms alongside the romanized Kodava forms"
         threshold: 0.8
 
+  - description: "Hindi script — terse days-of-week query with script request"
+    vars:
+      query: "days of the week, i want it in Hindi script"
+    assert:
+      - $ref: "#/assertionTemplates/hasDevanagari"
+      - type: icontains
+        value: "naaraache"
+      - type: llm-rubric
+        value: "Response shows all seven Kodava day names with their Devanagari (Hindi script) forms in a table"
+        threshold: 0.8
+
   # ── SUITE 6: Response completeness ───────────────────────────────────────────
 
   - description: "Pronoun table — naan and niin present"
