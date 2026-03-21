@@ -161,6 +161,18 @@ tests:
       - type: icontains
         value: "'k"
 
+  - description: "Numbers 1-10 — ondh through pathth"
+    vars:
+      query: "I want the numbers from 1 to 10."
+    assert:
+      - type: icontains
+        value: "ondh"
+      - type: icontains
+        value: "pathth"
+      - type: llm-rubric
+        value: "Response lists Kodava numbers from 1 to 10 with their romanized forms (ondh=1, dhand=2, muundh=3, naal=4, anjii=5, aar=6, eeL=7, ett=8, woyimbadh=9, pathth=10)"
+        threshold: 0.8
+
   # ── SUITE 4: Confidence flags ─────────────────────────────────────────────────
   # Note: 🟡 flag presence is tested structurally in eval/baseline.py
   # (confidence re-ranking + field presence). The LLM-level test below uses
