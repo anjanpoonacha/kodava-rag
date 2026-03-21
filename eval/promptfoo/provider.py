@@ -2,8 +2,9 @@
 Promptfoo Python provider for Kodava RAG.
 
 Exported functions:
-  call_api(prompt, options, context)  — full RAG pipeline (retrieve + generate)
-  retrieve(prompt, options, context)  — BM25 retrieval only, no LLM call
+  call_api(prompt, options, context)       — full RAG pipeline (retrieve + generate)
+  retrieve(prompt, options, context)        — BM25 retrieval only, no LLM call
+  call_agent(prompt, options, context)     — SearchingExpert agent pipeline
 
 Grading is handled by promptfoo's built-in Anthropic provider (no subprocess).
 See defaultTest.options.provider in promptfooconfig.yaml.
@@ -18,8 +19,9 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from core.retriever import search_all, search
+from core.agent import run_with_trace
 from core.llm import ask
+from core.retriever import search, search_all
 
 
 # ── Full RAG provider ──────────────────────────────────────────────────────────
@@ -40,6 +42,38 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
             "metadata": {
                 "context_hits": len(ctx),
                 "context": ctx,
+            },
+        }
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+# ── Agent provider ─────────────────────────────────────────────────────────────
+
+
+def call_agent(prompt: str, options: dict, context: dict) -> dict:
+    """SearchingExpert agent — tool-use loop then answer generation.
+
+    Returns output (answer string) and metadata including all search calls
+    and accumulated context, so promptfoo assertions can inspect retrieval
+    behaviour (e.g. query reformulation, collection targeting).
+    """
+    query = context.get("vars", {}).get("query", prompt)
+    try:
+        trace = run_with_trace(query)
+        return {
+            "output": trace.answer,
+            "metadata": {
+                "search_calls": [
+                    {
+                        "query": c.query,
+                        "collection": c.collection,
+                        "hits": c.hits,
+                    }
+                    for c in trace.search_calls
+                ],
+                "context_hits": len(trace.all_context),
+                "context": trace.all_context,
             },
         }
     except Exception as exc:

@@ -57,6 +57,11 @@ assertionTemplates:
     type: regex
     value: '[\u0C80-\u0CFF]'
 
+  # Script: Devanagari Unicode characters present
+  hasDevanagari:
+    type: regex
+    value: '[\u0900-\u097F]'
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
 tests:
 
@@ -156,6 +161,30 @@ tests:
       - type: icontains
         value: "'k"
 
+  - description: "Hungry — kela baip'w not hasi"
+    vars:
+      query: "I am hungry."
+    assert:
+      - type: icontains
+        value: "kela"
+      - type: icontains
+        value: "baip"
+      - type: llm-rubric
+        value: "Response uses 'kela baip'w' or 'kela baichaind'und' for 'I am hungry' and does NOT use 'hasi' as the word for hunger"
+        threshold: 0.9
+
+  - description: "Numbers 1-10 — ondh through pathth"
+    vars:
+      query: "I want the numbers from 1 to 10."
+    assert:
+      - type: icontains
+        value: "ondh"
+      - type: icontains
+        value: "pathth"
+      - type: llm-rubric
+        value: "Response lists Kodava numbers from 1 to 10 with their romanized forms (ondh=1, dhand=2, muundh=3, naal=4, anjii=5, aar=6, eeL=7, ett=8, woyimbadh=9, pathth=10)"
+        threshold: 0.8
+
   # ── SUITE 4: Confidence flags ─────────────────────────────────────────────────
   # Note: 🟡 flag presence is tested structurally in eval/baseline.py
   # (confidence re-ranking + field presence). The LLM-level test below uses
@@ -185,6 +214,28 @@ tests:
       - type: icontains
         value: "mane"
       - $ref: "#/assertionTemplates/hasKannada"
+
+  - description: "Hindi/Devanagari script — days of the week request"
+    vars:
+      query: "What are the days of the week in Kodava? I want it in Hindi script."
+    assert:
+      - $ref: "#/assertionTemplates/hasDevanagari"
+      - type: icontains
+        value: "naaraache"
+      - type: llm-rubric
+        value: "Response shows Kodava day names (at least Sunday and Monday) with Devanagari/Hindi script forms alongside the romanized Kodava forms"
+        threshold: 0.8
+
+  - description: "Hindi script — terse days-of-week query with script request"
+    vars:
+      query: "days of the week, i want it in Hindi script"
+    assert:
+      - $ref: "#/assertionTemplates/hasDevanagari"
+      - type: icontains
+        value: "naaraache"
+      - type: llm-rubric
+        value: "Response shows all seven Kodava day names with their Devanagari (Hindi script) forms in a table"
+        threshold: 0.8
 
   # ── SUITE 6: Response completeness ───────────────────────────────────────────
 
@@ -234,3 +285,37 @@ tests:
     assert:
       - type: icontains
         value: "ಳ"
+
+  # ── SUITE 9: Paragraph composition capability ────────────────────────────────
+
+  - description: "Paragraph — daily routine mentor text with pinynya"
+    vars:
+      query: "Write a paragraph about my daily routine in Kodava."
+    assert:
+      - type: icontains
+        value: "pinynya"
+      - type: icontains
+        value: "palaaka"
+      - type: llm-rubric
+        value: "Response shows a connected Kodava passage of at least 3 sentences about a daily routine, using the connective pinynya (then/next), and presents it as a mentor text the learner can study and adapt"
+        threshold: 0.8
+
+  - description: "Paragraph — market passage with serii and sentence frame"
+    vars:
+      query: "I want to practice writing a paragraph about going to the market in Kodava."
+    assert:
+      - type: icontains
+        value: "serii"
+      - type: llm-rubric
+        value: "Response includes a Kodava market passage or sentence frame scaffold that the learner can use to practice composition, with at least one sentence containing verified Kodava vocabulary for market or shopping"
+        threshold: 0.8
+
+  - description: "Paragraph — connective pinynya used correctly in multi-sentence output"
+    vars:
+      query: "Show me how to use pinynya in a short Kodava paragraph."
+    assert:
+      - type: icontains
+        value: "pinynya"
+      - type: llm-rubric
+        value: "Response shows at least two Kodava sentences connected by pinynya (then/after that/next), with English gloss for each sentence"
+        threshold: 0.8
