@@ -240,28 +240,34 @@ def run(query: str, history: list[dict] | None = None) -> str:
     return trace.answer
 
 
+# Sentinel prefix used to pass context through the token stream to the API layer.
+# The API layer strips this prefix and emits a separate SSE context event.
+_CONTEXT_SENTINEL = "\x00ctx\x00"
+
+
 def stream(query: str, history: list[dict] | None = None) -> Iterator[str]:
-    """Tool-use loop (blocking) then stream the answer token by token."""
+    """Tool-use loop (blocking) then stream the answer token by token.
+
+    Yields answer tokens followed by a single sentinel string carrying the
+    retrieved context as JSON.  Callers that only want text should filter out
+    lines starting with _CONTEXT_SENTINEL.
+    """
     system = load_prompt("rag_assistant")
     messages, trace = _agent_loop(query, history, system)
 
-    # If the loop already produced a text answer (stop_reason = end_turn with
-    # no pending tool calls), stream it character-by-character from the cached
-    # text so callers get a consistent iterator interface.
-    last = messages[-1]
-    if last["role"] == "assistant":
-        content = last["content"]
-        if isinstance(content, list):
-            texts = [b.text for b in content if hasattr(b, "text") and b.text]
-            if texts:
-                full = "\n".join(texts)
-                trace.answer = full
-                yield full
-                return
-
-    # Final answer pass — stream the response.
+    # Always stream the final answer via messages.stream() so the caller
+    # receives genuine token-by-token output regardless of which stop_reason
+    # the tool-use loop produced.  Any text the loop already emitted is
+    # discarded here — the streaming pass regenerates it with the accumulated
+    # context injected, matching the behaviour of run_with_trace().
     client = _make_client()
     ctx_block = json.dumps(trace.all_context, ensure_ascii=False, indent=2)
+
+    # Strip any trailing assistant turn so the conversation ends on a user
+    # message before we append the final-answer prompt.
+    if messages and messages[-1]["role"] == "assistant":
+        messages = messages[:-1]
+
     messages.append(
         {
             "role": "user",
@@ -284,6 +290,7 @@ def stream(query: str, history: list[dict] | None = None) -> Iterator[str]:
             yield text
 
     trace.answer = "".join(accumulated)
+    yield _CONTEXT_SENTINEL + json.dumps(trace.all_context, ensure_ascii=False)
 
 
 def run_with_trace(query: str, history: list[dict] | None = None) -> AgentTrace:

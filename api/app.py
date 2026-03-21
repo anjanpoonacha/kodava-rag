@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from config import DATA, PROMPT_FETCH, PROMPT_BRANCH, PROMPT_REPO
 from core.agent import run_with_trace
-from core.agent import stream as agent_stream
+from core.agent import stream as agent_stream, _CONTEXT_SENTINEL
 from core.github_sync import append_corpus_entry
 from core.llm import SYSTEM, ask
 from core.retriever import invalidate, search_all, search_all_async, augment_query
@@ -95,8 +95,11 @@ def agent_stream_endpoint(body: AgentQuery):
 
     def _sse_tokens():
         for token in agent_stream(body.q, body.history):
-            # SSE format: each data line followed by a blank line
-            yield f"data: {json.dumps({'token': token})}\n\n"
+            if token.startswith(_CONTEXT_SENTINEL):
+                ctx = json.loads(token[len(_CONTEXT_SENTINEL) :])
+                yield f"data: {json.dumps({'context': ctx})}\n\n"
+            else:
+                yield f"data: {json.dumps({'token': token})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(_sse_tokens(), media_type="text/event-stream")

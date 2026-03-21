@@ -300,6 +300,8 @@
     }
     .send-btn:hover { background: #9D6330; }
     .send-btn:disabled { background: #D4B89A; cursor: not-allowed; }
+    .send-btn.stop-btn { background: #B06060; }
+    .send-btn.stop-btn:hover { background: #963E3E; }
 
     /* ── Context panel ── */
     .context-header {
@@ -470,7 +472,13 @@
           placeholder="Ask about Kodava takk..."
           :disabled="loading"
         >
-        <button class="send-btn" @click="send()" :disabled="loading || !input.trim()">Send</button>
+        <button
+          class="send-btn"
+          :class="{ 'stop-btn': loading }"
+          @click="loading ? abort() : send()"
+          :disabled="!loading && !input.trim()"
+          x-text="loading ? 'Stop' : 'Send'">
+        </button>
       </div>
     </div>
 
@@ -517,6 +525,7 @@
         correctingId: null,
         correctionTab: 'kodava',
         correctionText: '',
+        _abort: null,
 
         correctionTabs: [
           { key: 'kodava',   label: 'Kodava form',    placeholder: 'corrected romanized form...' },
@@ -540,6 +549,7 @@
           if (!q || this.loading) return;
           this.input = '';
           this.loading = true;
+          this._abort = new AbortController();
 
           const idx = this.exchanges.length;
           this.exchanges.push({
@@ -553,27 +563,53 @@
           this.$nextTick(() => this.scrollToBottom());
 
           try {
-            const res = await fetch('/query', {
+            const res = await fetch('/agent/stream', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ q }),
+              signal: this._abort.signal,
             });
-            const data = await res.json();
-            // Replace the object in the array so Alpine detects the change
-            this.exchanges[idx] = {
-              ...this.exchanges[idx],
-              answer:  data.answer  || '',
-              context: data.context || [],
-            };
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const reader = res.body.getReader();
+            const dec = new TextDecoder();
+            let buf = '';
+
+            outer: while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buf += dec.decode(value, { stream: true });
+              const lines = buf.split('\n');
+              buf = lines.pop(); // keep any incomplete trailing line
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const payload = line.slice(6).trim();
+                if (payload === '[DONE]') break outer;
+                const msg = JSON.parse(payload);
+                if (msg.token !== undefined) {
+                  this.exchanges[idx].answer += msg.token;
+                  this.$nextTick(() => this.scrollToBottom());
+                } else if (msg.context !== undefined) {
+                  this.exchanges[idx].context = msg.context;
+                }
+              }
+            }
           } catch (e) {
-            this.exchanges[idx] = {
-              ...this.exchanges[idx],
-              answer: '_Error reaching the server. Is the API running?_',
-            };
+            if (e.name !== 'AbortError') {
+              this.exchanges[idx].answer =
+                (this.exchanges[idx].answer || '') +
+                '\n\n_Error reaching the server. Is the API running?_';
+            }
           } finally {
+            this._abort = null;
             this.loading = false;
             this.$nextTick(() => this.scrollToBottom());
           }
+        },
+
+        abort() {
+          if (this._abort) this._abort.abort();
         },
 
         async submitFeedback(ex, status, correction = null) {
