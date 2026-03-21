@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 from config import DATA
 from core.github_sync import sync_source_files
+import ingesters.corpus_jsonl  # noqa: F401 — registers CorpusJsonlIngester (thakk/corpus)
 import ingesters.vocab_table  # noqa: F401 — registers VocabTableIngester
 import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
 import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
@@ -18,7 +19,6 @@ import ingesters.training_data  # noqa: F401 — registers TrainingDataIngester
 from ingesters import REGISTRY
 
 PROCESSED = DATA / "processed"
-SEEDS = DATA / "seeds"
 CORPUS = DATA / "corpus"
 CORPUS.mkdir(parents=True, exist_ok=True)
 
@@ -52,58 +52,21 @@ def _load_existing_sentences() -> tuple[list[dict], set[str]]:
     return entries, ids
 
 
-def _load_seeds() -> tuple[list[dict], set[str]]:
-    """Load hand-authored seed entries from data/seeds/*.jsonl.
-
-    Seeds are always included in the corpus and take priority over ingested
-    entries with the same id. They are the canonical source for derivation
-    examples and other curated content that must not be overwritten by ingestion.
-    """
-    entries: list[dict] = []
-    ids: set[str] = set()
-    if not SEEDS.exists():
-        return entries, ids
-    for path in sorted(SEEDS.glob("*.jsonl")):
-        for line in path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                e = json.loads(line)
-                if e.get("id") and e["id"] not in ids:
-                    ids.add(e["id"])
-                    entries.append(e)
-            except json.JSONDecodeError:
-                pass
-    return entries, ids
-
-
 def build():
     print("Syncing source files from anjanpoonacha/thakk...")
     sync_source_files()
     print("Building corpus...")
 
-    # Seeds take highest priority — load first so their IDs block duplicates
-    # from existing_sentences and ingested data.
-    seed_entries, seen = _load_seeds()
-    print(f"  seeds: {len(seed_entries)} entries loaded from data/seeds/")
+    seen: set[str] = set()
 
-    # Preserve hand-verified sentences — skip any whose ID is already claimed by a seed
+    # Preserve hand-verified sentences from previous build
     existing_sentences, _ = _load_existing_sentences()
 
     buckets: dict[str, list[dict]] = {k: [] for k in COLLECTIONS}
-    # Distribute seeds into their respective collection buckets first
-    for entry in seed_entries:
-        col_type = entry.get("type", "")
-        if col_type in buckets:
-            buckets[col_type].append(entry)
-    # Then add existing sentences that don't conflict with seeds
     for entry in existing_sentences:
         eid = entry.get("id")
-        if eid and eid in seen:
-            continue
-        buckets["sentence"].append(entry)
-        if eid:
+        if eid and eid not in seen:
+            buckets["sentence"].append(entry)
             seen.add(eid)
 
     warnings = 0

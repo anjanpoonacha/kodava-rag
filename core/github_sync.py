@@ -152,7 +152,24 @@ def sync_source_files() -> None:
         local.write_bytes(content)
         synced += 1
 
-    # Sync corpus JSONL files (sentences + review) directly into data/corpus/
+    # Sync corpus JSONL files from thakk into data/processed/corpus/
+    # vocabulary and grammar_rules feed the ingestion pipeline as curated seed data.
+    # sentences and review are written directly to data/corpus/ (preserved across builds).
+    processed_corpus = processed / "corpus"
+    processed_corpus.mkdir(parents=True, exist_ok=True)
+
+    for corpus_path in (
+        "corpus/vocabulary.jsonl",
+        "corpus/grammar_rules.jsonl",
+        "corpus/phonemes.jsonl",
+    ):
+        if corpus_path not in blob_map:
+            print(f"  WARN: {corpus_path} not found in thakk tree — skipping")
+            continue
+        content = _fetch_blob(blob_map[corpus_path])
+        filename = corpus_path.split("/")[-1]
+        (processed_corpus / filename).write_bytes(content)
+
     for corpus_path in ("corpus/sentences.jsonl", "corpus/review.jsonl"):
         if corpus_path not in blob_map:
             print(f"  WARN: {corpus_path} not found in thakk tree — skipping")
