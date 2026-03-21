@@ -6,6 +6,10 @@ related to Kannada and shares most phonemes. Use standard Kannada script charact
 
 CRITICAL phoneme rules — these differ from standard Kannada romanization:
 
+Vowel digraphs — each maps to a SINGLE Kannada character:
+  oa → ಓ  (long O — NOT ಓ+ಅ, the digraph is one sound, one character)
+  ea → ಏ  (long E — NOT ಏ+ಅ, one character)
+
   d  → ಡ  (retroflex D — NOT ದ dental, NOT ಧ aspirated)
   dh → ದ  (dental d     — NOT ಧ aspirated)
   DD → ಡ್ಡ (double retroflex D)

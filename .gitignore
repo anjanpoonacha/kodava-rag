@@ -11,3 +11,4 @@ eval/promptfoo/.promptfoo/
 .DS_Store
 *.egg-info/
 audio-vocab/
+snapshots
