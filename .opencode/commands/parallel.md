@@ -1,7 +1,6 @@
 ---
 description: Spawn multiple agents in parallel — smart context sharing or direct launch
-agent: build
-subtask: true
+subtask: false
 ---
 
 You are orchestrating parallel agents. The user's request is:
