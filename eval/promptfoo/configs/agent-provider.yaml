@@ -1,0 +1,2 @@
+- id: "file://provider.py:call_agent"
+  label: "SearchingExpert agent"

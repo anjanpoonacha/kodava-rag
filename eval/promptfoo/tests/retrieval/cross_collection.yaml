@@ -1,0 +1,28 @@
+# Cross-collection fanout — search_all must pull from multiple collections.
+# Also covers the ennane + adige regression (id-based pin test).
+
+- description: "retrieval — search_all returns ≥3 results for sentence query"
+  vars:
+    query: "naan sante'k poanê"
+  assert:
+    - type: javascript
+      value: "JSON.parse(output).length >= 3"
+    - type: icontains
+      value: "sante"
+
+# Regression: stopword "how" was suppressing ennane; RRF was evicting it via dense noise.
+# Both ennane (dbc00acf) and adige maaduva (94fe4723) must be present so the LLM
+# can form the correct phrase "ennane adige maaduva".
+- description: "retrieval — how to cook: ennane and adige maaduva both retrieved"
+  vars:
+    query: "Translate: How to cook"
+  assert:
+    - type: javascript
+      value: |
+        const ctx = JSON.parse(output);
+        const ids = ctx.map(d => d.id);
+        const hasEnnane = ids.includes('dbc00acf');
+        const hasAdige  = ids.includes('94fe4723');
+        if (!hasEnnane) throw new Error('ennane (dbc00acf) missing from context');
+        if (!hasAdige)  throw new Error('adige maaduva (94fe4723) missing from context');
+        return true;

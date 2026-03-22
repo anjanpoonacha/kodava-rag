@@ -174,14 +174,14 @@ cd eval/promptfoo && promptfoo eval
 
 ### Run a single test
 
-Use `--filter-description` with a substring of the test's `description` field:
+Use `--filter-pattern` with a substring of the test's `description` field:
 
 ```bash
 # LLM eval — match by partial description (case-insensitive)
-cd eval/promptfoo && promptfoo eval --filter-description "house"
+cd eval/promptfoo && promptfoo eval --filter-pattern "house"
 
 # Retrieval eval — same flag works
-cd eval/promptfoo && promptfoo eval --config promptfooconfig.retrieval.yaml --filter-description "mane"
+cd eval/promptfoo && promptfoo eval --config promptfooconfig.retrieval.yaml --filter-pattern "mane"
 ```
 
 The flag accepts a plain string (substring match) or a `/regex/` pattern.
@@ -235,6 +235,40 @@ cd ../.. && git add data/thakk && git commit -m "pin thakk to <sha>"
 
 ---
 
+## Eval — Token Rules (follow during every session)
+
+**Do not burn tokens to locate a failure. Locate first, then evaluate.**
+
+1. **Never use `--no-cache` during debugging.** With cache on, re-running with a
+   different `--filter-pattern` costs zero LLM calls — promptfoo replays cached
+   responses through new assertions. Reserve `--no-cache` for the final pre-merge
+   clean run only.
+
+2. **Run retrieval before LLM.** The retrieval suite hits no LLMs and answers
+   whether the failure is Layer R in ~5 s:
+   ```bash
+   cd eval/promptfoo && promptfoo eval --config promptfooconfig.retrieval.yaml
+   ```
+   Only escalate to the LLM suite once retrieval passes.
+
+3. **Narrow before running the full suite.** When a specific test or area is
+   suspect, filter first:
+   ```bash
+   promptfoo eval --filter-pattern "<description substring>"
+   ```
+   Run the full suite only when the targeted run is green and you need to confirm
+   no regressions.
+
+4. **Order of escalation (cheapest → most expensive):**
+   ```
+   retrieval suite (free)
+     → targeted LLM filter (cached, ~1–3 LLM calls)
+       → full LLM suite (cached, ~19 LLM calls)
+         → full LLM suite --no-cache (final pre-merge check only)
+   ```
+
+---
+
 ## Eval Health Check (run before every merge to main)
 
 ```bash
@@ -245,7 +279,7 @@ python eval/baseline.py
 cd eval/promptfoo && promptfoo eval --config promptfooconfig.retrieval.yaml --no-cache
 
 # 3. LLM response quality — full pipeline, 19 test cases (~25s)
-cd eval/promptfoo && promptfoo eval --config promptfooconfig.yaml
+cd eval/promptfoo && promptfoo eval --config promptfooconfig.yaml --no-cache
 ```
 
 If any test fails → diagnose root cause layer before fixing anything.

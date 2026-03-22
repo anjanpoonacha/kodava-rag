@@ -1,0 +1,48 @@
+# Suite E + F — Answer faithfulness and script rendering after agent retrieval.
+
+# JS helper — parses the <!--META:{...}--> trailer appended by call_agent:
+#   const M = (m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))
+# Then: M.search_calls?.length >= 1
+
+- description: "agent — faithfulness: market sentence grounded in retrieved docs"
+  vars:
+    query: "How do I say 'I went to the market' in Kodava?"
+  assert:
+    - type: javascript
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
+    - type: llm-rubric
+      value: "Response contains a Kodava sentence meaning 'I went to the market' with a past tense verb (poanê) and a word for market (sante or chatthe)"
+      threshold: 0.8
+
+- description: "agent — faithfulness: house answer grounded in corpus"
+  vars:
+    query: "Tell me about the word for house in Kodava"
+  assert:
+    - type: javascript
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
+    - type: icontains
+      value: "mane"
+    - type: regex
+      value: '\*\*\S.*?\*\*'
+
+- description: "agent — script: Kannada present after agent retrieves mane"
+  vars:
+    query: "What is the Kodava word for house? Show me the Kannada script."
+  assert:
+    - type: javascript
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
+    - type: regex
+      value: '[\u0C80-\u0CFF]'
+    - type: icontains
+      value: "mane"
+
+- description: "agent — script: Devanagari present for days-of-week in Hindi script"
+  vars:
+    query: "Days of the week in Kodava, in Hindi script"
+  assert:
+    - type: javascript
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
+    - type: regex
+      value: '[\u0900-\u097F]'
+    - type: icontains
+      value: "naaraache"

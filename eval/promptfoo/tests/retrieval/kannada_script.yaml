@@ -1,0 +1,15 @@
+# Kannada-script BM25 index queries — verifies the script index is populated.
+
+- description: "retrieval — Kannada naan (ನಾನ್) returns results"
+  vars:
+    query: "ನಾನ್"
+  assert:
+    - type: javascript
+      value: "JSON.parse(output).length > 0"
+
+- description: "retrieval — Kannada mane (ಮನೆ) returns results"
+  vars:
+    query: "ಮನೆ"
+  assert:
+    - type: javascript
+      value: "JSON.parse(output).length > 0"

@@ -1,0 +1,5 @@
+# Shared provider definitions — referenced from all top-level configs.
+# Do not edit per-run; override at the config level if needed.
+
+- id: "file://provider.py:call_api"
+  label: "RAG (retrieve + Claude)"

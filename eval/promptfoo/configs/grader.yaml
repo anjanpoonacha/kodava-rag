@@ -1,0 +1,16 @@
+# Shared grader config — loaded via defaultTest: file://configs/grader.yaml
+# in every top-level eval config.
+#
+# Uses the built-in Anthropic provider so grading happens natively with no
+# Python subprocess overhead.
+#
+# apiBaseUrl trailing slash: the SDK appends 'v1/messages' as a relative path,
+# preserving the /anthropic prefix required by the Local Hai proxy.
+# Env vars resolved from eval/promptfoo/.env via nunjucks {{ env.VAR }}.
+
+options:
+  provider:
+    id: anthropic:messages:claude-haiku-4-5
+    config:
+      apiKey: "{{ env.ANTHROPIC_API_KEY }}"
+      apiBaseUrl: "{{ env.ANTHROPIC_BASE_URL_GRADER }}"

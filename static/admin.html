@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kodava Takk — Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #FAFAF8;
+      color: #1A1A1A;
+      display: flex;
+      justify-content: center;
+      padding: 48px 16px;
+    }
+
+    .admin {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1A1A1A;
+    }
+
+    h1 span { color: #B5763A; font-weight: 400; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #E5E2DC;
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .token-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .token-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #E5E2DC;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #FAFAF8;
+    }
+    .token-input:focus { outline: none; border-color: #B5763A; }
+
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: #B5763A;
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { background: #9D6330; }
+
+    .btn-danger {
+      background: #B06060;
+      color: #fff;
+    }
+    .btn-danger:hover:not(:disabled) { background: #963E3E; }
+
+    .btn-outline {
+      background: none;
+      border: 1px solid #E5E2DC;
+      color: #888;
+    }
+    .btn-outline:hover:not(:disabled) { border-color: #B5763A; color: #B5763A; }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 4px 0;
+    }
+    .stat-row .label { color: #888; }
+    .stat-row .value { font-weight: 600; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #F0EDE8;
+      margin: 2px 0;
+    }
+
+    .msg {
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+    .msg-ok { background: #EAF4EF; color: #2D7A4F; }
+    .msg-err { background: #FDE8E8; color: #B06060; }
+    .msg-info { background: #F0EDE8; color: #888; }
+
+    .confirm-box {
+      background: #FDF6F0;
+      border: 1px solid #E8D5C0;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .confirm-box p { font-size: 13px; color: #555; }
+    .confirm-box .token-input { background: #fff; }
+    .confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    a { color: #5A7BBF; }
+    a:hover { color: #3D5A99; }
+  </style>
+</head>
+<body x-data="adminApp()">
+
+  <div class="admin">
+
+    <h1>Kodava Takk <span>Admin</span></h1>
+
+    <!-- Auth card -->
+    <div class="card" x-show="!unlocked">
+      <div class="card-label">Admin Token</div>
+      <div class="token-row">
+        <input
+          class="token-input"
+          type="password"
+          x-model="tokenInput"
+          @keydown.enter="unlock()"
+          placeholder="Enter admin token">
+        <button class="btn btn-primary" @click="unlock()" :disabled="!tokenInput.trim() || unlocking">
+          <span x-show="unlocking"><span class="spinner"></span></span>
+          <span x-text="unlocking ? '' : 'Unlock'"></span>
+        </button>
+      </div>
+      <div class="msg msg-err" x-show="authError" x-text="authError"></div>
+    </div>
+
+    <!-- Admin controls (visible after unlock) -->
+    <template x-if="unlocked">
+      <div style="display:flex;flex-direction:column;gap:24px;">
+
+        <!-- Corpus stats -->
+        <div class="card">
+          <div class="card-label">Corpus</div>
+          <template x-if="stats">
+            <div>
+              <div class="stat-row">
+                <span class="label">Vocabulary</span>
+                <span class="value" x-text="stats.corpus.vocabulary || 0"></span>
+              </div>
+              <div class="stat-row">
+                <span class="label">Sentences</span>
+                <span class="value" x-text="stats.corpus.sentences || 0"></span>
+              </div>
+              <div class="stat-row">
+                <span class="label">Grammar rules</span>
+                <span class="value" x-text="stats.corpus.grammar_rules || 0"></span>
+              </div>
+              <div class="stat-row">
+                <span class="label">Phonemes</span>
+                <span class="value" x-text="stats.corpus.phonemes || 0"></span>
+              </div>
+              <hr class="divider">
+              <div class="stat-row">
+                <span class="label">Total</span>
+                <span class="value" x-text="stats.total"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Pending feedback -->
+        <div class="card">
+          <div class="card-label">Pending Feedback</div>
+          <template x-if="stats && stats.pending_count > 0">
+            <div>
+              <div class="stat-row">
+                <span class="label">Entries awaiting review</span>
+                <span class="value" x-text="stats.pending_count"></span>
+              </div>
+            </div>
+          </template>
+          <div class="msg msg-info" x-show="stats && stats.pending_count === 0">
+            No feedback pending.
+          </div>
+        </div>
+
+        <!-- Rebuild -->
+        <div class="card">
+          <div class="card-label">Rebuild Corpus</div>
+          <p style="font-size:13px;color:#888;margin-bottom:4px;">
+            Syncs thakk + rebuilds BM25 indexes. Run after merging a feedback PR.
+          </p>
+
+          <!-- Default state: show rebuild button -->
+          <div x-show="!confirming && !rebuilding">
+            <button class="btn btn-primary" @click="confirming = true" style="width:100%;">
+              Rebuild Corpus
+            </button>
+          </div>
+
+          <!-- Confirmation step: enter rebuild password -->
+          <div class="confirm-box" x-show="confirming && !rebuilding">
+            <p>Enter the rebuild password to confirm.</p>
+            <input
+              class="token-input"
+              type="password"
+              x-model="confirmToken"
+              @keydown.enter="rebuild()"
+              placeholder="Rebuild password">
+            <div class="confirm-actions">
+              <button class="btn btn-outline" @click="confirming = false; confirmToken = '';">Cancel</button>
+              <button class="btn btn-danger" @click="rebuild()" :disabled="!confirmToken.trim()">
+                Confirm Rebuild
+              </button>
+            </div>
+          </div>
+
+          <!-- Rebuilding spinner -->
+          <div x-show="rebuilding" style="text-align:center;padding:8px 0;">
+            <span class="spinner" style="border-color:rgba(181,118,58,0.3);border-top-color:#B5763A;width:20px;height:20px;border-width:3px;"></span>
+            <span style="font-size:13px;color:#888;margin-left:8px;">Rebuilding...</span>
+          </div>
+
+          <!-- Result message -->
+          <div x-show="rebuildMsg" class="msg" :class="rebuildOk ? 'msg-ok' : 'msg-err'" x-text="rebuildMsg"></div>
+        </div>
+
+      </div>
+    </template>
+
+  </div>
+
+  <script>
+    function adminApp() {
+      return {
+        tokenInput: '',
+        unlocking: false,
+        unlocked: false,
+        authError: '',
+        stats: null,
+        confirming: false,
+        confirmToken: '',
+        rebuilding: false,
+        rebuildMsg: '',
+        rebuildOk: false,
+
+        _token: '',
+
+        init() {
+          const saved = sessionStorage.getItem('admin_token');
+          if (saved) {
+            this._token = saved;
+            this.unlocked = true;
+            this.fetchStatus();
+          }
+        },
+
+        async unlock() {
+          const t = this.tokenInput.trim();
+          if (!t) return;
+          this.unlocking = true;
+          this.authError = '';
+          try {
+            const res = await fetch('/admin/status', {
+              headers: { 'Authorization': 'Bearer ' + t },
+            });
+            if (res.ok) {
+              this._token = t;
+              sessionStorage.setItem('admin_token', t);
+              this.unlocked = true;
+              this.stats = await res.json();
+            } else {
+              const d = await res.json().catch(() => ({}));
+              this.authError = d.detail || 'Invalid token';
+            }
+          } catch (_) {
+            this.authError = 'Could not reach server';
+          } finally {
+            this.unlocking = false;
+          }
+        },
+
+        async fetchStatus() {
+          try {
+            const res = await fetch('/admin/status', {
+              headers: { 'Authorization': 'Bearer ' + this._token },
+            });
+            if (res.ok) this.stats = await res.json();
+          } catch (_) {}
+        },
+
+        async rebuild() {
+          const rebuildToken = this.confirmToken.trim();
+          if (!rebuildToken) return;
+          this.confirming = false;
+          this.confirmToken = '';
+          this.rebuilding = true;
+          this.rebuildMsg = '';
+          try {
+            const res = await fetch('/admin/rebuild', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + this._token,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ token: rebuildToken }),
+            });
+            const d = await res.json();
+            if (res.ok) {
+              this.rebuildOk = true;
+              this.rebuildMsg = d.message || 'Rebuild complete';
+              this.fetchStatus();
+            } else {
+              this.rebuildOk = false;
+              this.rebuildMsg = d.detail || 'Rebuild failed';
+            }
+          } catch (_) {
+            this.rebuildOk = false;
+            this.rebuildMsg = 'Could not reach server';
+          } finally {
+            this.rebuilding = false;
+          }
+        },
+      };
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

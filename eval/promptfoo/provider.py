@@ -57,27 +57,25 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
 def call_agent(prompt: str, options: dict, context: dict) -> dict:
     """SearchingExpert agent — tool-use loop then answer generation.
 
-    Returns output (answer string) and metadata including all search calls
-    and accumulated context, so promptfoo assertions can inspect retrieval
-    behaviour (e.g. query reformulation, collection targeting).
+    Appends a <!--META:{...}--> trailer to the output so promptfoo JS
+    assertions can access search_calls via:
+        JSON.parse(output.match(/<!--META:(.*?)-->/s)?.[1] ?? '{}')
+    The trailer is invisible in rendered Markdown but parseable in assertions.
     """
     query = context.get("vars", {}).get("query", prompt)
     try:
         trace = run_with_trace(query)
+        meta = {
+            "search_calls": [
+                {"query": c.query, "collection": c.collection, "hits": c.hits}
+                for c in trace.search_calls
+            ],
+            "context_hits": len(trace.all_context),
+        }
+        meta_trailer = f"\n<!--META:{json.dumps(meta)}-->"
         return {
-            "output": trace.answer,
-            "metadata": {
-                "search_calls": [
-                    {
-                        "query": c.query,
-                        "collection": c.collection,
-                        "hits": c.hits,
-                    }
-                    for c in trace.search_calls
-                ],
-                "context_hits": len(trace.all_context),
-                "context": trace.all_context,
-            },
+            "output": trace.answer + meta_trailer,
+            "metadata": {**meta, "context": trace.all_context},
         }
     except Exception as exc:
         return {"error": str(exc)}

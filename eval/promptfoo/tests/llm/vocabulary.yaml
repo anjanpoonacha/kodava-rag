@@ -1,0 +1,114 @@
+# Core vocabulary + grammar correctness tests.
+# Checks that corpus-grounded answers surface the expected Kodava forms.
+
+- description: "vocab — water (neer/niir)"
+  vars:
+    query: "How do you say water in Kodava?"
+  assert:
+    - type: llm-rubric
+      value: "Response gives the Kodava word for water — neer or niir (same word, alternate romanizations)"
+      threshold: 0.9
+
+- description: "vocab — house (mane) from 'home' query"
+  vars:
+    query: "What is the Kodava word for home?"
+  assert:
+    - type: icontains
+      value: "mane"
+
+- description: "vocab — greeting (namaskara)"
+  vars:
+    query: "How do I greet someone in Kodava?"
+  assert:
+    - type: icontains
+      value: "namaskara"
+
+- description: "vocab — past tense 'I went' (naan poanê)"
+  vars:
+    query: "How do I say 'I went' in Kodava?"
+  assert:
+    - type: icontains
+      value: "naan"
+    - type: icontains
+      value: "poan"
+
+- description: "vocab — dative suffix 'to the market' (chatthe'k)"
+  vars:
+    query: "How do I say 'to the market' in Kodava?"
+  assert:
+    - type: icontains
+      value: "chatthe"
+    - type: icontains
+      value: "'k"
+
+- description: "vocab — hungry: kela bayippa, not hasi"
+  vars:
+    query: "I am hungry."
+  assert:
+    - type: icontains
+      value: "kela"
+    - type: icontains
+      # corpus form: Kela bayippa (audio_source verified)
+      value: "bayipp"
+    - type: not-icontains
+      value: "hasi"
+    - type: llm-rubric
+      value: "Response uses 'Kela bayippa' or similar kela-based expression for 'I am hungry' and does NOT use 'hasi' as the word for hunger"
+      threshold: 0.9
+
+- description: "vocab — numbers 1-10 (ondh through pathth)"
+  vars:
+    query: "I want the numbers from 1 to 10."
+  assert:
+    - type: icontains
+      value: "ondh"
+    - type: icontains
+      value: "pathth"
+    - type: llm-rubric
+      value: "Response lists Kodava numbers from 1 to 10. All ten numbers are present. The forms may vary slightly (ondh/ondhu=1, dhand=2, muundh=3, naal=4, anji/anjii=5, aar=6, eeL/eaLu/eeL=7, ett=8, woyimbadh=9, pathth/patt=10) — accept any attested variant."
+      threshold: 0.8
+
+- description: "vocab — cook (adige maaduwa'k) surfaces for English cook query"
+  vars:
+    query: "What is the Kodava word for 'to cook'?"
+  assert:
+    - type: icontains
+      value: "adige"
+    - type: regex
+      value: '\|.+\|'
+    - type: regex
+      value: '[\u0C80-\u0CFF]'
+
+- description: "vocab — adige not absent when querying what cooked today"
+  vars:
+    query: "What did you cook today?"
+  assert:
+    - type: not-icontains
+      value: "not in the corpus"
+    - type: icontains
+      value: "adige"
+
+- description: "vocab — pronouns: naan and niin present in full table"
+  vars:
+    query: "What are the pronouns in Kodava — first, second, and third person?"
+  assert:
+    - type: icontains
+      value: "naan"
+    - type: icontains
+      value: "niin"
+
+- description: "vocab — how to cook: ennane adige maaduva, no fabrication"
+  vars:
+    query: "Translate: How to cook"
+  assert:
+    - type: icontains
+      value: "ennane"
+    - type: icontains
+      value: "adige"
+    - type: not-icontains
+      value: "engane"
+    - type: not-icontains
+      value: "not in the corpus"
+    - type: llm-rubric
+      value: "Response translates 'how to cook' using the Kodava words ennane (how) and adige maaduva or adige maaduwk (to cook), without inventing vocabulary not in the corpus"
+      threshold: 0.8

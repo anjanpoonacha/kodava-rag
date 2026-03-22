@@ -1,0 +1,45 @@
+# Confidence flag tests — ⚠️ and 🟡 flag presence.
+# Note: 🟡 structural presence is tested in eval/baseline.py.
+# These tests verify ⚠️ on unverified derivations at the LLM response level.
+
+- description: "confidence — ⚠️ on unverified derived form (present continuous)"
+  vars:
+    query: "How do you say 'I am cooking' in Kodava?"
+  assert:
+    - type: llm-rubric
+      value: "Response either says the phrase is not in the corpus, or if it attempts to construct the phrase it includes a ⚠️ flag indicating the form is unverified"
+      threshold: 0.8
+
+- description: "conjugation — past tense of maaduwk flags derived form with ⚠️"
+  vars:
+    query: "What is the past tense of adige maaduva?"
+  assert:
+    - type: icontains
+      value: "⚠️"
+    - type: icontains
+      value: "maad"
+    - type: not-icontains
+      value: "probably"
+    - type: not-icontains
+      value: "likely"
+    - type: llm-rubric
+      value: "Response derives the past tense form, marks it ⚠️ because it is inferred by rule not directly attested, and does not hedge with words like 'probably' or 'likely'"
+      threshold: 0.9
+
+- description: "conjugation — past tense of waruwk (sleep) is person-distinct, not invariant"
+  vars:
+    query: "What is the past tense of waruw'k (to sleep)? Show all persons."
+  assert:
+    - type: icontains
+      value: "sleep"
+    - type: regex
+      value: '[\u0C80-\u0CFF]'
+    - type: regex
+      value: '\|.+\|'
+    - type: icontains
+      value: "wariya"
+    - type: icontains
+      value: "waruchi"
+    - type: llm-rubric
+      value: "Response shows the past tense paradigm of waruw'k (to sleep) with person-distinct forms: naan war'nê, niin wariya, āāwu/nanga waruchi, ninga wariira, ainga warichi. The forms must NOT all be war'nê."
+      threshold: 0.8

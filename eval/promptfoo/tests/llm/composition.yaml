@@ -1,0 +1,74 @@
+# Composition + paragraph tests — multi-sentence Kodava output.
+# Also covers context-faithfulness (RAG grounding check).
+
+- description: "composition — daily routine mentor text with pinynya"
+  vars:
+    query: "Write a paragraph about my daily routine in Kodava."
+  assert:
+    - type: icontains
+      value: "pinynya"
+    - type: icontains
+      value: "palaaka"
+    - type: llm-rubric
+      value: "Response shows a connected Kodava passage of at least 3 sentences about a daily routine, using the connective pinynya (then/next), and presents it as a mentor text the learner can study and adapt"
+      threshold: 0.8
+
+- description: "composition — market passage scaffold with serii"
+  vars:
+    query: "I want to practice writing a paragraph about going to the market in Kodava."
+  assert:
+    - type: icontains
+      value: "serii"
+    - type: llm-rubric
+      value: "Response includes a Kodava market passage or sentence frame scaffold that the learner can use to practice composition, with at least one sentence containing verified Kodava vocabulary for market or shopping"
+      threshold: 0.8
+
+- description: "composition — pinynya used correctly in multi-sentence output"
+  vars:
+    query: "Show me how to use pinynya in a short Kodava paragraph."
+  assert:
+    - type: icontains
+      value: "pinynya"
+    - type: llm-rubric
+      value: "Response shows at least two Kodava sentences connected by pinynya (then/after that/next), with English gloss for each sentence"
+      threshold: 0.8
+
+- description: "composition — Kaveri festival paragraph (native speaker audio source)"
+  vars:
+    query: "Write a paragraph about the Kaveri Sankramana festival in Kodava."
+  assert:
+    - type: icontains
+      value: "Kaavêri"
+    - type: llm-rubric
+      value: "Response presents a connected Kodava passage about the Kaveri festival or Changrandi, sourced from native speaker audio (audio_source or verified), with Kodava sentences and English translations. The passage may cover the date, celebration, or significance of the festival."
+      threshold: 0.8
+
+- description: "composition — Kaveri Changrandi date mentions Tholeyaar"
+  vars:
+    query: "When does Kaveri Changrandi happen? Explain in Kodava."
+  assert:
+    - type: icontains
+      value: "Tholeyaar"
+    - type: llm-rubric
+      value: "Response mentions the Kodava month Tholeyaar and explains when Kaveri Sankramana occurs, with Kodava phrases from the corpus"
+      threshold: 0.8
+
+- description: "composition — Kaveri celebration: pilgrimage with theertha"
+  vars:
+    query: "How do Kodava people celebrate Kaveri Sankramana?"
+  assert:
+    - type: icontains
+      value: "theertha"
+    - type: llm-rubric
+      value: "Response explains how Kodava people celebrate Kaveri Sankramana, mentioning Talakaveri or the holy water (theertha) pilgrimage, using Kodava vocabulary from native speaker audio"
+      threshold: 0.8
+
+- description: "rag — 'I went to the market' grounded in retrieved corpus"
+  vars:
+    query: "How do I say 'I went to the market' in Kodava?"
+  assert:
+    - type: icontains
+      value: "chatthe"
+    - type: context-faithfulness
+      contextTransform: "JSON.stringify(context.metadata?.context ?? [])"
+      threshold: 0.6

@@ -41,6 +41,8 @@ Example: `"how do I say good morning"` → search `"morning greeting"`.
 
 **Do NOT reformulate when the query is already a direct keyword or phrase** — a single noun, a Kodava word, a technical term, or a proper name. These are already the most precise possible BM25 tokens.
 
+**Preserve exact spelling of Kodava verb stems** — do not alter vowel length or add/remove letters. If the user writes `waruw'k`, search `waruw` not `waaruw` or `waru`. Exact spelling is critical for BM25 token matching.
+
 Examples of words that must NOT be broadened:
 - `"helicopter"` → do not try "aircraft", "vehicle", "flying machine"
 - `"hospital"` → do not try "medical", "building", "clinic"
@@ -58,7 +60,7 @@ Every query type below requires a specific number of calls. Follow these pattern
 | Query type | Call 1 | Call 2 | Call 3 |
 |---|---|---|---|
 | "how to [verb]" | verb keyword | `how manner` | — |
-| Conjugation / tense | root verb (`vocabulary`) | conjugation pattern (`grammar_rules`) | — |
+| Conjugation / tense | root verb (`vocabulary`) | `[verbstem]` (`grammar_rules`) | — |
 | Comparison "X vs Y" | term X (`vocabulary`) | term Y (`vocabulary`) | — |
 | Grammar check "is X correct?" | grammar pattern (`grammar_rules`) | content words (`vocabulary`) | — |
 | Script rendering | word (`vocabulary`) | script rules (`phonemes`) | — |

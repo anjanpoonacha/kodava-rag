@@ -17,6 +17,7 @@ import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
 import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
 import ingesters.elementary_kodava  # noqa: F401 — registers ElementaryKodavaIngester
 import ingesters.training_data  # noqa: F401 — registers TrainingDataIngester
+import ingesters.verb_paradigm  # noqa: F401 — registers VerbParadigmIngester
 
 # TranscriptionIngester is NOT registered here — it runs on-demand via ingest_session.py
 # and writes its output to data/thakk/corpus/sentences.jsonl (picked up by corpus_jsonl.py)
@@ -162,10 +163,10 @@ def build():
         label = out_path.name
         print(f"  {label}: {len(entries)}")
 
-    # review.jsonl is never overwritten by the build
-    review = CORPUS / "review.jsonl"
-    if not review.exists():
-        review.touch()
+    # rejected.jsonl is a local analytics file, never overwritten by the build
+    rejected = CORPUS / "rejected.jsonl"
+    if not rejected.exists():
+        rejected.touch()
 
     count = sum(len(v) for v in buckets.values())
     print(f"  total: {count} entries, {warnings} warnings")

@@ -1,0 +1,65 @@
+# Format compliance tests — structural output shape checks.
+# Assertions: regex (hasBold, hasTable, hasKannada, hasDevanagari) + fast icontains.
+# No llm-rubric here — these run in <3s total.
+
+- description: "format — vocabulary answer has bolded Kodava word"
+  vars:
+    query: "What is the Kodava word for house?"
+  assert:
+    - type: regex
+      value: '\*\*\S.*?\*\*'
+    - type: icontains
+      value: "mane"
+
+- description: "format — Kannada script accompanies Kodava word for house"
+  vars:
+    query: "What is the Kodava word for house? Show me the Kannada script."
+  assert:
+    - type: regex
+      value: '[\u0C80-\u0CFF]'
+    - type: icontains
+      value: "mane"
+
+- description: "format — table for word-by-word sentence breakdown"
+  vars:
+    query: "Break down the sentence 'naan sante'k poanê' word by word"
+  assert:
+    - type: regex
+      value: '\|.+\|'
+    - type: icontains
+      value: "naan"
+    - type: icontains
+      value: "sante"
+
+- description: "format — Devanagari present for days-of-week in Hindi script"
+  vars:
+    query: "What are the days of the week in Kodava? I want it in Hindi script."
+  assert:
+    - type: regex
+      value: '[\u0900-\u097F]'
+    - type: icontains
+      value: "naaraache"
+    - type: llm-rubric
+      value: "Response shows Kodava day names (at least Sunday and Monday) with Devanagari/Hindi script forms alongside the romanized Kodava forms"
+      threshold: 0.8
+
+- description: "format — terse days-of-week query still returns Devanagari table"
+  vars:
+    query: "days of the week, i want it in Hindi script"
+  assert:
+    - type: regex
+      value: '[\u0900-\u097F]'
+    - type: icontains
+      value: "naaraache"
+    - type: llm-rubric
+      value: "Response shows all seven Kodava day names with their Devanagari (Hindi script) forms in a table"
+      threshold: 0.8
+
+- description: "format — conciseness: morning answer under 1200 chars"
+  vars:
+    query: "What is the Kodava word for morning?"
+  assert:
+    - type: javascript
+      value: "output.length < 1200"
+    - type: icontains
+      value: "polaaka"
