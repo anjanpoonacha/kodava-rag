@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-Full pipeline: YouTube URL → audio → vocab table → thakk repo → corpus rebuild.
+Full pipeline: YouTube URL → audio → transcription → vocab table → thakk repo → corpus.
 
 Usage:
-    python scripts/ingest_session.py <youtube_url> --name session_04
-    python scripts/ingest_session.py <youtube_url> --name session_04 --dry-run
+    python scripts/ingest_session.py <youtube_url> --name session_04 --category sessions
+    python scripts/ingest_session.py <youtube_url> --name quiz_08 --category quizzes
+    python scripts/ingest_session.py <youtube_url> --name kaveri_sankramana --category other
 
 Steps:
-    1. Download audio  → data/raw/audio/<name>.mp3          (via download_audio.py)
-    2. Transcribe      → data/raw/transcriptions/<name>.txt  (via Gemini / Claude)
-    3. Build vocab     → audio-vocab/<name>_vocab_table.md   (via process_transcription.py)
-    4. Push to thakk   → anjanpoonacha/thakk audio-vocab/
-    5. Rebuild corpus  → data/corpus/*.jsonl
+    1. Download audio    → data/raw/audio/<name>.mp3
+    2. Transcribe        → data/thakk/audio-vocab/<category>/<name>/transcription.md
+    3. Build vocab table → data/thakk/audio-vocab/<category>/<name>/vocab_table.md
+    4. Push to thakk     → anjanpoonacha/thakk audio-vocab/<category>/<name>/
+    5. Rebuild corpus    → data/corpus/*.jsonl
 """
 
 import argparse
@@ -26,6 +27,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
 import anthropic
+from anthropic.types import TextBlock
 
 from config import DATA, ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL
 import config
@@ -124,15 +126,15 @@ def transcribe_audio(audio_path: Path, transcription_path: Path) -> None:
         }
     ]
 
-    response = client.messages.create(  # type: ignore[arg-type]
+    response = client.messages.create(
         model=config.MODEL,
         max_tokens=8192,
-        messages=messages,
+        messages=messages,  # type: ignore[arg-type]
     )
 
     transcription_path.parent.mkdir(parents=True, exist_ok=True)
     text = next(
-        (b.text for b in response.content if hasattr(b, "text")),
+        (b.text for b in response.content if isinstance(b, TextBlock)),
         "",
     )
     transcription_path.write_text(text, encoding="utf-8")
@@ -141,19 +143,37 @@ def transcribe_audio(audio_path: Path, transcription_path: Path) -> None:
 # ── pipeline ─────────────────────────────────────────────────────────────────
 
 
-def ingest(url: str, name: str, dry_run: bool = False) -> None:
+THAKK_AUDIO_VOCAB = ROOT / "data" / "thakk" / "audio-vocab"
+VALID_CATEGORIES = ("sessions", "quizzes", "other")
+
+
+def ingest(
+    url: str,
+    name: str,
+    category: str = "sessions",
+    dry_run: bool = False,
+    start: str | None = None,
+    end: str | None = None,
+) -> None:
+    if category not in VALID_CATEGORIES:
+        print(f"  ERROR: --category must be one of {VALID_CATEGORIES}")
+        sys.exit(1)
+
     audio_dir = DATA / "raw" / "audio"
-    transcription_dir = DATA / "raw" / "transcriptions"
-    vocab_dir = Path("/tmp") / "kodava_vocab"
+    per_video_dir = THAKK_AUDIO_VOCAB / category / name
 
     audio_path = audio_dir / f"{name}.mp3"
-    transcription_path = transcription_dir / f"{name}_transcription.txt"
-    vocab_path = vocab_dir / f"{name}_vocab_table.md"
-    repo_vocab_path = f"audio-vocab/{name}_vocab_table.md"
+    transcription_path = per_video_dir / "transcription.md"
+    vocab_path = per_video_dir / "vocab_table.md"
+    repo_transcription_path = f"audio-vocab/{category}/{name}/transcription.md"
+    repo_vocab_path = f"audio-vocab/{category}/{name}/vocab_table.md"
+
+    per_video_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'=' * 60}")
-    print(f"  Ingesting: {name}")
+    print(f"  Ingesting: {name}  ({category})")
     print(f"  URL:       {url}")
+    print(f"  Output:    {per_video_dir.relative_to(ROOT)}")
     print(f"{'=' * 60}\n")
 
     # 1. Download
@@ -166,7 +186,9 @@ def ingest(url: str, name: str, dry_run: bool = False) -> None:
                 url,
                 "--name",
                 name,
-            ],
+            ]
+            + (["--start", start] if start else [])
+            + (["--end", end] if end else []),
             f"Downloading {name}.mp3",
         )
         if not audio_path.exists():
@@ -176,23 +198,24 @@ def ingest(url: str, name: str, dry_run: bool = False) -> None:
         print(f"Step 1/5 — Audio already exists: {audio_path.name}")
     print(f"  size: {audio_path.stat().st_size / 1024 / 1024:.1f} MB")
 
-    # 2. Transcribe
+    # 2. Transcribe → per-video directory
     if not transcription_path.exists():
         print("\nStep 2/5 — Transcribe audio")
         try:
             transcribe_audio(audio_path, transcription_path)
             print(
-                f"  Written: {transcription_path.name} ({transcription_path.stat().st_size} bytes)"
+                f"  Written: {transcription_path.relative_to(ROOT)} "
+                f"({transcription_path.stat().st_size} bytes)"
             )
         except RuntimeError as e:
             print(f"  {e}")
-            print(
-                "  Skipping transcription — will build vocab table directly from audio path"
-            )
+            print("  Skipping transcription — no transcription.md produced")
     else:
-        print(f"\nStep 2/5 — Transcription already exists: {transcription_path.name}")
+        print(
+            f"\nStep 2/5 — Transcription already exists: {transcription_path.relative_to(ROOT)}"
+        )
 
-    # 3. Build vocab table
+    # 3. Build vocab table → per-video directory
     if not vocab_path.exists():
         print("\nStep 3/5 — Build vocab table")
         if transcription_path.exists():
@@ -201,30 +224,33 @@ def ingest(url: str, name: str, dry_run: bool = False) -> None:
                     sys.executable,
                     str(ROOT / "scripts" / "process_transcription.py"),
                     str(transcription_path),
+                    "--output-dir",
+                    str(per_video_dir),
                 ],
                 "Extracting vocab table",
             )
-            # process_transcription.py writes to data/processed/vocab_tables/ — move to audio-vocab/
-            processed = (
-                ROOT / "data" / "processed" / "vocab_tables" / f"{name}_vocab_table.md"
-            )
-            if processed.exists() and not vocab_path.exists():
-                vocab_dir.mkdir(parents=True, exist_ok=True)
-                vocab_path.write_bytes(processed.read_bytes())
-                print(f"  Copied to: {vocab_path}")
         else:
             print("  No transcription available — skipping vocab table")
             return
     else:
-        print(f"\nStep 3/5 — Vocab table already exists: {vocab_path.name}")
+        print(
+            f"\nStep 3/5 — Vocab table already exists: {vocab_path.relative_to(ROOT)}"
+        )
     print(f"  size: {vocab_path.stat().st_size} bytes")
 
     if dry_run:
         print("\n  DRY RUN — skipping GitHub push and corpus rebuild")
         return
 
-    # 4. Push to thakk
+    # 4. Push both files to thakk
     print("\nStep 4/5 — Push to thakk")
+    if transcription_path.exists():
+        sha = push_to_thakk(
+            transcription_path,
+            repo_transcription_path,
+            f"corpus: add {name} timestamped transcription",
+        )
+        print(f"  Pushed: {repo_transcription_path} → {sha[:12]}")
     sha = push_to_thakk(vocab_path, repo_vocab_path, f"corpus: add {name} vocab table")
     print(f"  Pushed: {repo_vocab_path} → {sha[:12]}")
 
@@ -243,9 +269,28 @@ def main():
     parser.add_argument(
         "--name", required=True, help="Output name stem, e.g. session_04"
     )
+    parser.add_argument(
+        "--category",
+        default="sessions",
+        choices=list(VALID_CATEGORIES),
+        help="Video category (default: sessions)",
+    )
+    parser.add_argument(
+        "--start", help="Start time (MM:SS or HH:MM:SS). Auto-detected from ?t= in URL."
+    )
+    parser.add_argument(
+        "--end", help="End time (MM:SS or HH:MM:SS). Omit to download to end."
+    )
     parser.add_argument("--dry-run", action="store_true", help="Skip push and rebuild")
     args = parser.parse_args()
-    ingest(args.url, args.name, dry_run=args.dry_run)
+    ingest(
+        args.url,
+        args.name,
+        category=args.category,
+        dry_run=args.dry_run,
+        start=args.start,
+        end=args.end,
+    )
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 ---
 description: Diagnose a failing Kodava RAG query, fix root cause, add promptfoo test, verify
 agent: build
-subtask: true
+subtask: false
 ---
 
 @AGENTS.md
