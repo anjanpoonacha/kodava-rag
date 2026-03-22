@@ -126,7 +126,16 @@ def agent_stream_endpoint(body: AgentQuery):
                 yield f"data: {json.dumps({'token': token})}\n\n"
         yield "data: [DONE]\n\n"
 
-    return StreamingResponse(_sse_tokens(), media_type="text/event-stream")
+    return StreamingResponse(
+        _sse_tokens(),
+        media_type="text/event-stream",
+        headers={
+            # Tell Nginx/Envoy/Istio not to buffer this response.
+            "X-Accel-Buffering": "no",
+            # SSE must not be cached by any intermediate.
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

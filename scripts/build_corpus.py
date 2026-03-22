@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from config import DATA, EMBED_ENABLED
+from config import DATA, EMBED_ENABLED, EMBED_MODEL
 from core.github_sync import sync_source_files
 import ingesters.corpus_jsonl  # noqa: F401 — registers CorpusJsonlIngester (thakk/corpus)
 import ingesters.vocab_table  # noqa: F401 — registers VocabTableIngester
@@ -198,12 +198,14 @@ def build():
 
 
 def _corpus_hash() -> str:
-    """SHA-256 of all embeddable collection files concatenated.
+    """SHA-256 of all embeddable collection files + embedding model name.
 
-    Used to skip re-embedding when the corpus hasn't changed since the
-    last build — avoids unnecessary API calls during iterative development.
+    Including the model name ensures that changing EMBED_MODEL invalidates
+    any persisted embeddings.npy (e.g. on a PVC), preventing silent
+    dimensionality mismatches.
     """
     h = hashlib.sha256()
+    h.update(EMBED_MODEL.encode())
     for name in (
         "sentences_lesson.jsonl",
         "sentences_narrative.jsonl",
