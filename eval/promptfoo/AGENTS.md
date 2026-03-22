@@ -85,6 +85,27 @@ promptfoo eval --filter-pattern "vocab|format|script"
 
 ---
 
+### Token discipline — follow during every session
+
+**Never run the full LLM suite to find a failure. Find it first, then evaluate.**
+
+| Rule | Reason |
+|------|--------|
+| No `--no-cache` during debugging | Re-runs with a different `--filter-pattern` cost zero tokens when cache is on — promptfoo replays stored responses through new assertions |
+| Run retrieval suite before LLM suite | Zero LLM cost; tells you immediately if the failure is Layer R |
+| Filter before running full suite | A single targeted run costs 1–3 LLM calls; a full run costs ~19 |
+| `--no-cache` only on the final pre-merge clean run | The only time fresh LLM calls for every test are justified |
+
+**Escalation order (cheapest → most expensive):**
+```
+retrieval suite (free, ~5s)
+  → targeted LLM filter, cache on (~1–3 calls)
+    → full LLM suite, cache on (~19 calls)
+      → full LLM suite --no-cache  ← final pre-merge only
+```
+
+---
+
 ## Adding a New Test (TDD Workflow)
 
 **Rule: new regressions go to `tests/llm/tdd.yaml` first.**

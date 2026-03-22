@@ -75,7 +75,7 @@ Fix: edit `prompts/search_agent.md` — add or sharpen the relevant call-strateg
 Before fixing, add a test case to `eval/promptfoo/promptfooconfig.yaml` that captures this failure.
 Use `$ref` to existing `assertionTemplates` where applicable. Place in the correct suite (1–8).
 
-Run it to confirm it currently fails (use `--filter-pattern`, not `--filter-description`):
+Run it to confirm it currently fails (use `--filter-pattern`:
 
 ```bash
 cd eval/promptfoo && promptfoo eval --no-cache --filter-pattern "DESCRIPTION_OF_NEW_TEST"

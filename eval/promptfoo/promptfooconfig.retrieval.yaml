@@ -1,112 +1,19 @@
-# Retrieval-only eval — no LLM calls, runs fast, zero API cost.
-# Tests the BM25 retrieval layer in isolation.
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Kodava RAG — retrieval layer eval (no LLM calls)
 #
 # Usage:
-#   cd eval/promptfoo
 #   promptfoo eval --config promptfooconfig.retrieval.yaml
 
-description: "Kodava RAG — retrieval layer eval (no LLM)"
+description: "Kodava RAG — BM25 retrieval layer"
 
 providers:
-  - id: "file://provider.py:retrieve"
-    label: "BM25 retrieval"
+  - file://configs/retrieval-provider.yaml
 
 prompts:
   - "{{query}}"
 
 tests:
-  # ── Exact vocabulary hits ─────────────────────────────────────────────────────
-
-  - description: "mane (house) hits vocabulary collection"
-    vars:
-      query: "mane"
-      collection: "vocabulary"
-    assert:
-      - type: icontains
-        value: '"mane"'
-
-  - description: "neer (water) hits vocabulary collection"
-    vars:
-      query: "neer"
-      collection: "vocabulary"
-    assert:
-      - type: icontains
-        value: "neer"
-
-  - description: "namaskara hits vocabulary"
-    vars:
-      query: "namaskara"
-    assert:
-      - type: icontains
-        value: "namaskara"
-
-  - description: "past tense grammar rule retrieved"
-    vars:
-      query: "past tense"
-      collection: "grammar_rules"
-    assert:
-      - type: icontains
-        value: "past"
-
-  - description: "phoneme LL retrieved from phonemes"
-    vars:
-      query: "LL phoneme retroflex"
-      collection: "phonemes"
-    assert:
-      - type: icontains
-        value: "ll"
-
-  # ── Kannada-script queries ────────────────────────────────────────────────────
-
-  - description: "Kannada script naan (ನಾನ್) retrieves results"
-    vars:
-      query: "ನಾನ್"
-    assert:
-      - type: javascript
-        value: "JSON.parse(output).length > 0"
-
-  - description: "Kannada script mane (ಮನೆ) retrieves results"
-    vars:
-      query: "ಮನೆ"
-    assert:
-      - type: javascript
-        value: "JSON.parse(output).length > 0"
-
-  # ── Cold / nonsense query returns empty ───────────────────────────────────────
-
-  - description: "Nonsense query returns no results"
-    vars:
-      query: "xzqwerty_nonexistent_12345"
-    assert:
-      - type: javascript
-        value: "JSON.parse(output).length === 0"
-
-  # ── Cross-collection fanout ───────────────────────────────────────────────────
-
-  - description: "search_all returns results across collections for sentence query"
-    vars:
-      query: "naan sante'k poanê"
-    assert:
-      - type: javascript
-        value: "JSON.parse(output).length >= 3"
-      - type: icontains
-        value: "sante"
-
-  # ── How-to query: ennane + adige maaduva both in context ─────────────────────
-  # Regression for: stopword "how" suppressing ennane, RRF evicting it via dense noise.
-  # Both the "how" word (ennane, id=dbc00acf) and "to cook" (adige maaduva, id=94fe4723)
-  # must be present in the retrieved context so the LLM can form the correct phrase.
-
-  - description: "how to cook — ennane and adige maaduva both retrieved"
-    vars:
-      query: "Translate: How to cook"
-    assert:
-      - type: javascript
-        value: |
-          const ctx = JSON.parse(output);
-          const ids = ctx.map(d => d.id);
-          const hasEnnane = ids.includes('dbc00acf');
-          const hasAdige  = ids.includes('94fe4723');
-          if (!hasEnnane) throw new Error('ennane (dbc00acf) missing from context');
-          if (!hasAdige)  throw new Error('adige maaduva (94fe4723) missing from context');
-          return true;
+  - file://tests/retrieval/hits.yaml
+  - file://tests/retrieval/kannada_script.yaml
+  - file://tests/retrieval/cross_collection.yaml

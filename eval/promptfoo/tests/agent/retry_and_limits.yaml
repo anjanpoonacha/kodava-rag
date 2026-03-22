@@ -7,7 +7,7 @@
     query: "greeting"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length >= 1"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
     - type: icontains
       value: "namaskara"
 
@@ -16,7 +16,7 @@
     query: "Count to ten in Kodava"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length >= 1"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
     - type: icontains
       value: "ondh"
     - type: icontains
@@ -27,6 +27,6 @@
     query: "How do I say I went to the market yesterday in Kodava?"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length <= 2"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 99) <= 2'
     - type: icontains
       value: "sante"

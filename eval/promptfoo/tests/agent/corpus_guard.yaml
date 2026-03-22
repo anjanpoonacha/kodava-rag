@@ -10,15 +10,14 @@
     - type: icontains
       value: "not in the corpus"
 
-- description: "agent — guard: does not borrow Hindi words for hospital"
+- description: "agent — guard: hospital surfaces aaspathre from corpus"
   vars:
     query: "What is the Kodava word for hospital?"
   assert:
     - type: icontains
+      value: "aaspathre"
+    - type: not-icontains
       value: "not in the corpus"
-    - type: llm-rubric
-      value: "Response does not substitute a Hindi, Urdu, or Kannada loanword as authentic Kodava vocabulary"
-      threshold: 0.9
 
 # Keyword guard — "Do NOT reformulate" rule: single English keyword + 0 hits = gap
 - description: "agent — keyword guard: helicopter exactly 1 search call, no broadening"
@@ -26,7 +25,7 @@
     query: "helicopter"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length === 1"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) === 1'
     - type: icontains
       value: "not in the corpus"
     - type: llm-rubric
@@ -38,7 +37,7 @@
     query: "internet"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length === 1"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) === 1'
     - type: icontains
       value: "not in the corpus"
 
@@ -47,6 +46,6 @@
     query: "hospital"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length === 1"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) === 1'
     - type: icontains
       value: "aaspathre"

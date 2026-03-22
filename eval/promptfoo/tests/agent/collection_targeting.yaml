@@ -6,24 +6,22 @@
     query: "How is the LL sound written in Kannada script?"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length >= 1"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
     - type: icontains
       value: "ಳ"
     - type: javascript
       value: >
-        context.metadata?.search_calls?.some(c => c.collection === 'phonemes')
+        ((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.some(c => c.collection === 'phonemes') ?? false
 
 - description: "agent — targeting: grammar correction question hits grammar_rules"
   vars:
     query: "What is the correct past tense suffix in Kodava?"
   assert:
     - type: javascript
-      value: "context.metadata?.search_calls?.length >= 1"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 1'
     - type: javascript
       value: >
-        context.metadata?.search_calls?.some(
-          c => c.collection === 'grammar_rules' || c.collection === null
-        )
+        ((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.some(c => c.collection === 'grammar_rules' || c.collection === null) ?? false
     - type: llm-rubric
       value: "Response addresses past tense formation in Kodava"
       threshold: 0.8
