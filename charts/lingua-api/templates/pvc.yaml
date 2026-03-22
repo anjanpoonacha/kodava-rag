@@ -1,0 +1,19 @@
+{{- if .Values.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lingua-api-corpus
+  namespace: {{ include "lingua-api.namespace" . }}
+  labels:
+    app: lingua-api
+    app.kubernetes.io/managed-by: Helm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}
+  {{- if .Values.storage.storageClass }}
+  storageClassName: {{ .Values.storage.storageClass }}
+  {{- end }}
+{{- end }}

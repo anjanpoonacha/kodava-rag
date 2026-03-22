@@ -68,6 +68,11 @@ proxy:
     aicoreBinding: aicore-binding
     proxyConfig: proxy-config
 
+storage:
+  enabled: false       # set true in values-<env>.yaml to persist embeddings.npy across restarts
+  size: 1Gi
+  storageClass: ""     # leave empty to use the cluster default StorageClass
+
 # Pre-requisite secrets — created outside Helm, referenced by name only.
 # Create before first deploy:
 #   kubectl create secret generic lingua-api-secrets \

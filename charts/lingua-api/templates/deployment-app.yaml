@@ -78,6 +78,9 @@ spec:
               port: {{ .Values.app.port }}
             initialDelaySeconds: 5
             periodSeconds: 10
+          volumeMounts:
+            - name: corpus
+              mountPath: /app/data/corpus
           resources:
             requests:
               memory: {{ .Values.app.resources.requests.memory }}
@@ -113,6 +116,13 @@ spec:
               memory: {{ .Values.approuter.resources.limits.memory }}
               cpu: {{ .Values.approuter.resources.limits.cpu }}
       volumes:
+        - name: corpus
+          {{- if .Values.storage.enabled }}
+          persistentVolumeClaim:
+            claimName: lingua-api-corpus
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         - name: xsuaa-binding
           secret:
             secretName: {{ .Values.xsuaa.bindingName }}
