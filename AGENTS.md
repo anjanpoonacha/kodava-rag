@@ -235,6 +235,17 @@ cd ../.. && git add data/thakk && git commit -m "pin thakk to <sha>"
 
 ---
 
+## Promptfoo Eval Workflow
+
+When the user asks about anything related to promptfoo — running evals, fixing
+failing tests, writing or reviewing assertions, configuring `promptfooconfig.yaml`,
+debugging the Layer R/P/C/T diagnostic flow, or anything in the `eval/` directory —
+you MUST delegate to the `promptfoo-expert` agent. Invoke it using the `task` tool
+with `subagent_type: 'promptfoo-expert'` and a prompt that includes the full user
+request plus any relevant context (failing test output, query, layer diagnosis so far).
+
+---
+
 ## Eval — Token Rules (follow during every session)
 
 **Do not burn tokens to locate a failure. Locate first, then evaluate.**

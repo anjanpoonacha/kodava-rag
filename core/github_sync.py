@@ -40,7 +40,16 @@ def sync_source_files() -> None:
 
     Local dev  — data/thakk is a git submodule: runs git submodule update --remote.
     Container  — data/thakk is absent (excluded from image): shallow-clones from GitHub.
+
+    Set SKIP_THAKK_SYNC=1 to skip the remote update entirely (useful when the
+    submodule has local commits that haven't been pushed yet).
     """
+    import os
+
+    if os.environ.get("SKIP_THAKK_SYNC"):
+        print("  thakk sync skipped (SKIP_THAKK_SYNC set)")
+        return
+
     submodule = config.DATA / "thakk"
 
     if not submodule.exists():
