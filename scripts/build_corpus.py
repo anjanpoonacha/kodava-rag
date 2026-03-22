@@ -44,20 +44,39 @@ SENTENCE_NARRATIVE = CORPUS / "sentences_narrative.jsonl"
 
 
 def _load_existing_sentences() -> tuple[list[dict], set[str]]:
-    """Load hand-verified sentences preserved across builds."""
+    """Load hand-verified sentences preserved across builds.
+
+    Excludes any entry whose ID already exists in data/thakk/corpus/sentences.jsonl
+    so that edits to thakk-sourced sentences are not silently blocked by stale
+    preserved copies in data/corpus/sentences.jsonl.
+    """
     path = CORPUS / "sentences.jsonl"
     entries: list[dict] = []
     ids: set[str] = set()
     if not path.exists():
         return entries, ids
+
+    # IDs that will be re-ingested from thakk — let thakk win
+    thakk_ids: set[str] = set()
+    thakk_sentences = THAKK / "corpus" / "sentences.jsonl"
+    if thakk_sentences.exists():
+        for line in thakk_sentences.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    thakk_ids.add(json.loads(line)["id"])
+                except (json.JSONDecodeError, KeyError):
+                    pass
+
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue
         try:
             e = json.loads(line)
-            if e.get("id") and e["id"] not in ids:
-                ids.add(e["id"])
+            eid = e.get("id")
+            if eid and eid not in ids and eid not in thakk_ids:
+                ids.add(eid)
                 entries.append(e)
         except json.JSONDecodeError:
             pass
