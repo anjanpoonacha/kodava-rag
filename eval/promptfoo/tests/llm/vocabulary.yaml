@@ -113,6 +113,18 @@
       value: "Response translates 'how to cook' using the Kodava words ennane (how) and adige maaduva or adige maaduwk (to cook), without inventing vocabulary not in the corpus"
       threshold: 0.8
 
+- description: "grammar — maadu'le is nonpast negative, not positive 'together as one'"
+  vars:
+    query: "Allinja paththu dhivasa kathane'kke sarvasaadhaaraNa aaythu bêl paNi aadu, boare oru paNi, nelathina kaLapanthadhu ondhu maadu'le — what does maadu'le mean here grammatically?"
+  assert:
+    - type: not-icontains
+      value: "doing together as one"
+    - type: not-icontains
+      value: "done together as one"
+    - type: llm-rubric
+      value: "Response correctly identifies maadu'le as the nonpast negative form of maaduw'k (-'le suffix = negative marker), meaning 'not done' or 'not do'. It must NOT describe ondhu maadu'le as meaning 'doing together as one unit' — that interpretation ignores the negative suffix."
+      threshold: 0.9
+
 - description: "vocab — boare means ಬೇರೆ (different/other/separate) in Kannada"
   vars:
     query: "boare"
