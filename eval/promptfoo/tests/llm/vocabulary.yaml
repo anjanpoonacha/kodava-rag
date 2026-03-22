@@ -112,3 +112,13 @@
     - type: llm-rubric
       value: "Response translates 'how to cook' using the Kodava words ennane (how) and adige maaduva or adige maaduwk (to cook), without inventing vocabulary not in the corpus"
       threshold: 0.8
+
+- description: "vocab — boare means ಬೇರೆ (different/other/separate) in Kannada"
+  vars:
+    query: "boare"
+  assert:
+    - type: icontains
+      value: "ಬೇರೆ"
+    - type: llm-rubric
+      value: "Response translates 'boare' as 'different', 'other', or 'separate' and gives the Kannada script ಬೇರೆ. It must NOT describe boare as meaning 'kind', 'sort', or 'type' as a standalone word."
+      threshold: 0.9
