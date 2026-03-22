@@ -163,10 +163,10 @@ def build():
         label = out_path.name
         print(f"  {label}: {len(entries)}")
 
-    # review.jsonl is never overwritten by the build
-    review = CORPUS / "review.jsonl"
-    if not review.exists():
-        review.touch()
+    # rejected.jsonl is a local analytics file, never overwritten by the build
+    rejected = CORPUS / "rejected.jsonl"
+    if not rejected.exists():
+        rejected.touch()
 
     count = sum(len(v) for v in buckets.values())
     print(f"  total: {count} entries, {warnings} warnings")

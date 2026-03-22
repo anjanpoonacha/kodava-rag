@@ -14,7 +14,13 @@ from pathlib import Path
 from ingesters import BaseIngester, CorpusEntry, register
 
 _HANDLED = frozenset(
-    {"vocabulary.jsonl", "grammar_rules.jsonl", "phonemes.jsonl", "sentences.jsonl"}
+    {
+        "vocabulary.jsonl",
+        "grammar_rules.jsonl",
+        "phonemes.jsonl",
+        "sentences.jsonl",
+        "feedback_pending.jsonl",
+    }
 )
 
 _TYPE_MAP = {
@@ -22,6 +28,7 @@ _TYPE_MAP = {
     "grammar_rules.jsonl": "grammar_rule",
     "phonemes.jsonl": "phoneme",
     "sentences.jsonl": "sentence",
+    "feedback_pending.jsonl": "sentence",
 }
 
 

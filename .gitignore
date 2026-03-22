@@ -1,8 +1,6 @@
 data/*.db
 data/raw/
-data/corpus/*.jsonl
-data/corpus/embeddings.npy
-data/corpus/embeddings_meta.json
+data/corpus/
 eval/promptfoo/test_native.yaml
 __pycache__/
 .env

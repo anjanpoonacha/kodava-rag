@@ -20,6 +20,11 @@ WORD_SEARCH_THRESHOLD = (
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 GITHUB_REPO = os.getenv("GITHUB_REPO", "anjanpoonacha/thakk")
 GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
+FEEDBACK_BRANCH = "feedback/pending"
+FEEDBACK_MOCK = os.getenv("FEEDBACK_MOCK", "false").lower() == "true"
+
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+REBUILD_TOKEN = os.getenv("REBUILD_TOKEN", "")
 
 # Dense retrieval — OpenAI-compatible embeddings endpoint.
 # LITELLM_BASE_URL must point to a base that serves POST /embeddings
