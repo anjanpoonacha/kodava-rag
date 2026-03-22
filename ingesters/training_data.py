@@ -103,9 +103,13 @@ class TrainingDataIngester(BaseIngester):
             naan_form = next(
                 (f["kodava"] for f in forms if f.get("person") == "naan"), verb
             )
-            # devanagari = naan form devanagari if present
+            # devanagari / kannada = naan form values if present
             naan_devan = next(
                 (f.get("devanagari", "") for f in forms if f.get("person") == "naan"),
+                "",
+            )
+            naan_kannada = next(
+                (f.get("kannada", "") for f in forms if f.get("person") == "naan"),
                 "",
             )
 
@@ -114,7 +118,7 @@ class TrainingDataIngester(BaseIngester):
                     type="grammar_rule",
                     kodava=naan_form,
                     devanagari=naan_devan,
-                    kannada="",
+                    kannada=naan_kannada,
                     english=f"{tense} tense of {verb} — {meaning}",
                     explanation=explanation[:600],
                     confidence="textbook",
