@@ -20,6 +20,15 @@ spec:
       service:
         name: lingua-api
         port: {{ .Values.app.port }}
+    # Bypass the approuter for the SSE streaming endpoint.
+    # The approuter buffers responses, which breaks text/event-stream.
+    # Route directly to the backend so chunked transfer encoding is preserved.
+    - path: /agent/stream
+      methods: ["POST", "OPTIONS"]
+      noAuth: true
+      service:
+        name: lingua-api
+        port: {{ .Values.app.port }}
     - path: /
       methods: ["GET"]
       noAuth: true
