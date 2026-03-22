@@ -1,0 +1,32 @@
+# Suite C + I — Multi-call retry and call-limit cap.
+# C: queries where the first search is expected thin; agent should retry.
+# I: complex queries must never exceed 2 search calls.
+
+- description: "agent — retry: vague 'greeting' resolves to namaskara"
+  vars:
+    query: "greeting"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "namaskara"
+
+- description: "agent — retry: 'count to ten' reaches 1-10 list"
+  vars:
+    query: "Count to ten in Kodava"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "ondh"
+    - type: icontains
+      value: "pathth"
+
+- description: "agent — call cap: complex sentence query stays within 2 calls"
+  vars:
+    query: "How do I say I went to the market yesterday in Kodava?"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length <= 2"
+    - type: icontains
+      value: "sante"

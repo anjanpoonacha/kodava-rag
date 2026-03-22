@@ -1,0 +1,52 @@
+# Suite D + G — Corpus guard and keyword guard.
+# D: agent must not fabricate after exhausting search calls.
+# G: a direct English keyword that returns 0 hits is a corpus gap — agent must
+#    stop after exactly 1 call and report the gap (no broadening).
+
+- description: "agent — guard: unknown word after exhausting search"
+  vars:
+    query: "What is the Kodava word for helicopter?"
+  assert:
+    - type: icontains
+      value: "not in the corpus"
+
+- description: "agent — guard: does not borrow Hindi words for hospital"
+  vars:
+    query: "What is the Kodava word for hospital?"
+  assert:
+    - type: icontains
+      value: "not in the corpus"
+    - type: llm-rubric
+      value: "Response does not substitute a Hindi, Urdu, or Kannada loanword as authentic Kodava vocabulary"
+      threshold: 0.9
+
+# Keyword guard — "Do NOT reformulate" rule: single English keyword + 0 hits = gap
+- description: "agent — keyword guard: helicopter exactly 1 search call, no broadening"
+  vars:
+    query: "helicopter"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length === 1"
+    - type: icontains
+      value: "not in the corpus"
+    - type: llm-rubric
+      value: "Response does not mention gaadi, vehicle, aircraft, or any Kodava word as a translation for helicopter"
+      threshold: 0.9
+
+- description: "agent — keyword guard: internet exactly 1 search call"
+  vars:
+    query: "internet"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length === 1"
+    - type: icontains
+      value: "not in the corpus"
+
+- description: "agent — keyword guard: hospital 1 call, finds aaspathre directly"
+  vars:
+    query: "hospital"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length === 1"
+    - type: icontains
+      value: "aaspathre"

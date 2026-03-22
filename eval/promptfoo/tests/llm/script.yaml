@@ -1,0 +1,34 @@
+# Script rendering tests — Kannada / Devanagari Unicode assertions.
+# Validates the phoneme map and Kannada-script BM25 index query paths.
+
+- description: "script — LL phoneme maps to Kannada ಳ"
+  vars:
+    query: "How is the LL sound written in Kannada script?"
+  assert:
+    - type: icontains
+      value: "ಳ"
+
+- description: "script — Kannada-script query ಮನೆ ಎಂದರೇನು resolves to mane"
+  vars:
+    query: "ಮನೆ ಎಂದರೇನು?"
+  assert:
+    - type: icontains
+      value: "mane"
+    - type: regex
+      value: '[\u0C80-\u0CFF]'
+
+- description: "script — Kannada BM25 query ಮನೆ ಅಂದ್ರೆ ಏನು resolves to mane"
+  vars:
+    query: "ಮನೆ ಅಂದ್ರೆ ಏನು Kodava ಅಲ್ಲಿ?"
+  assert:
+    - type: icontains
+      value: "mane"
+    - type: regex
+      value: '[\u0C80-\u0CFF]'
+
+- description: "script — LL phoneme: Kannada ಳ in answer for phoneme map query"
+  vars:
+    query: "What does the phoneme LL map to in Kannada script?"
+  assert:
+    - type: icontains
+      value: "ಳ"

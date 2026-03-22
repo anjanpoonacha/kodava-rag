@@ -1,0 +1,59 @@
+# Suite A+H — Query reformulation.
+# Natural-language questions whose raw form scores poorly against BM25;
+# the agent must reformulate before retrieval succeeds.
+# Suite H verifies the first search_call query differs from the raw input.
+
+- description: "agent — reformulation: 'how do I say good morning' finds polaaka"
+  vars:
+    query: "How do I say good morning in Kodava?"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "polaaka"
+    - type: llm-rubric
+      value: "Response gives a Kodava morning greeting (polaaka or nallé polaaka)"
+      threshold: 0.9
+
+- description: "agent — reformulation: 'dwelling place' finds mane"
+  vars:
+    query: "What is the Kodava word for a dwelling place?"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "mane"
+
+- description: "agent — reformulation: 'how do people greet each other' finds namaskara"
+  vars:
+    query: "How do Kodava people greet each other?"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "namaskara"
+
+- description: "agent — reformulation trigger: first call is not the raw sentence (morning)"
+  vars:
+    query: "how do I say good morning in Kodava"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "polaaka"
+    - type: javascript
+      # First search call must be a keyword form, not the raw sentence
+      value: "!context.metadata?.search_calls?.[0]?.query?.startsWith('how do I')"
+
+- description: "agent — reformulation trigger: first call is not the raw sentence (water)"
+  vars:
+    query: "what is the Kodava word for water"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: llm-rubric
+      value: "Response gives the Kodava word for water — neer or niir"
+      threshold: 0.9
+    - type: javascript
+      # First search call must be a keyword form, not the raw sentence
+      value: "!context.metadata?.search_calls?.[0]?.query?.startsWith('what is')"

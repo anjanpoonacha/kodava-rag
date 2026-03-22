@@ -1,0 +1,16 @@
+# TDD — active regressions under development.
+#
+# Workflow:
+#   1. A test fails → add it here with description of root cause
+#   2. Fix the failing layer (corpus / retrieval / prompt)
+#   3. Once green, move it to the appropriate stable suite:
+#      corpus_guard.yaml | format.yaml | vocabulary.yaml |
+#      script.yaml       | confidence.yaml | composition.yaml
+#
+# Run just this file while iterating:
+#   promptfoo eval --filter-pattern "tdd"
+#   promptfoo eval -c promptfooconfig.yaml --filter-pattern "<description substring>"
+#
+# Keep this file small. Anything older than one merged fix belongs in a stable suite.
+
+[] # empty — add regressions here, graduate to stable suite once green

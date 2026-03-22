@@ -1,0 +1,70 @@
+# Corpus guard tests — zero LLM grader calls, runs in <5s.
+# All assertions are icontains/not-icontains only.
+# These are the fastest signal that the "not in corpus" path still works.
+
+- description: "corpus gap — helicopter: must refuse to fabricate"
+  vars:
+    query: "What is the Kodava word for helicopter?"
+  assert:
+    - type: icontains
+      value: "not in the corpus"
+    - type: not-icontains
+      value: "loanword"
+    - type: not-icontains
+      value: "everyday"
+
+- description: "corpus gap — helicopter: clean refusal via LLM grader"
+  vars:
+    query: "What is the Kodava word for helicopter?"
+  assert:
+    - type: icontains
+      value: "not in the corpus"
+    - type: not-icontains
+      value: "loanword"
+    - type: not-icontains
+      value: "everyday"
+    - type: llm-rubric
+      value: "Response states that helicopter is not in the corpus and does not invent a word or speculate about possible loanword usage"
+      threshold: 0.9
+
+- description: "corpus gap — unknown domain (planets): must refuse"
+  vars:
+    query: "How do I say Jupiter in Kodava?"
+  assert:
+    - type: icontains
+      value: "not in the corpus"
+    - type: not-icontains
+      value: "beaLaache is the Kodava word for Jupiter"
+    - type: not-icontains
+      value: "beaLa is the Kodava word for Jupiter"
+    - type: not-icontains
+      value: "beaLa** is the Kodava word"
+    - type: llm-rubric
+      value: "Response states Jupiter is not in the corpus as a standalone word. It may mention beaLaache (Thursday) as an etymological connection, but must NOT present beaLa or beaLaache as the Kodava translation of the planet Jupiter."
+      threshold: 0.9
+
+- description: "corpus gap — refrigerator: must state gap and stop, no speculation"
+  vars:
+    query: "How do I say refrigerator in Kodava?"
+  assert:
+    - type: icontains
+      value: "not in the corpus"
+    - type: not-icontains
+      value: "loanword"
+    - type: not-icontains
+      value: "everyday"
+    - type: not-icontains
+      value: "Tip"
+    - type: llm-rubric
+      value: "Response states that refrigerator is not in the corpus and stops there — it does not speculate about possible loanwords, everyday Kodava usage, or offer tips about contributing to the corpus"
+      threshold: 0.9
+
+- description: "no borrowed vocabulary — must not substitute Hindi/Urdu for hospital"
+  vars:
+    query: "What is the Kodava word for hospital?"
+  assert:
+    - type: icontains
+      value: "aaspathre"
+    - type: llm-rubric
+      value: "Response does not substitute a Hindi, Urdu, or Kannada loanword as authentic Kodava vocabulary. The correct Kodava word is aaspathre."
+      threshold: 0.9

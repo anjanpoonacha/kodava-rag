@@ -1,0 +1,48 @@
+# Retrieval hits — exact vocabulary and grammar lookups.
+# No LLM calls. All assertions are icontains or javascript on raw JSON output.
+
+- description: "retrieval — mane (house) hits vocabulary collection"
+  vars:
+    query: "mane"
+    collection: "vocabulary"
+  assert:
+    - type: icontains
+      value: '"mane"'
+
+- description: "retrieval — neer (water) hits vocabulary collection"
+  vars:
+    query: "neer"
+    collection: "vocabulary"
+  assert:
+    - type: icontains
+      value: "neer"
+
+- description: "retrieval — namaskara hits vocabulary"
+  vars:
+    query: "namaskara"
+  assert:
+    - type: icontains
+      value: "namaskara"
+
+- description: "retrieval — past tense grammar rule retrieved"
+  vars:
+    query: "past tense"
+    collection: "grammar_rules"
+  assert:
+    - type: icontains
+      value: "past"
+
+- description: "retrieval — phoneme LL retrieved from phonemes"
+  vars:
+    query: "LL phoneme retroflex"
+    collection: "phonemes"
+  assert:
+    - type: icontains
+      value: "ll"
+
+- description: "retrieval — nonsense query returns no results"
+  vars:
+    query: "xzqwerty_nonexistent_12345"
+  assert:
+    - type: javascript
+      value: "JSON.parse(output).length === 0"

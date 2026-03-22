@@ -1,0 +1,46 @@
+# Suite E + F — Answer faithfulness and script rendering after agent retrieval.
+
+- description: "agent — faithfulness: market sentence grounded in retrieved docs"
+  vars:
+    query: "How do I say 'I went to the market' in Kodava?"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "sante"
+    - type: context-faithfulness
+      contextTransform: "JSON.stringify(context.metadata?.context ?? [])"
+      threshold: 0.6
+
+- description: "agent — faithfulness: house answer grounded in corpus"
+  vars:
+    query: "Tell me about the word for house in Kodava"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: icontains
+      value: "mane"
+    - type: regex
+      value: '\*\*\S.*?\*\*'
+
+- description: "agent — script: Kannada present after agent retrieves mane"
+  vars:
+    query: "What is the Kodava word for house? Show me the Kannada script."
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: regex
+      value: '[\u0C80-\u0CFF]'
+    - type: icontains
+      value: "mane"
+
+- description: "agent — script: Devanagari present for days-of-week in Hindi script"
+  vars:
+    query: "Days of the week in Kodava, in Hindi script"
+  assert:
+    - type: javascript
+      value: "context.metadata?.search_calls?.length >= 1"
+    - type: regex
+      value: '[\u0900-\u097F]'
+    - type: icontains
+      value: "naaraache"
