@@ -21,6 +21,7 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
+        fsGroup: 1001
       containers:
         - name: lingua-api
           image: {{ include "lingua-api.image" (dict "values" .Values.app "root" .) }}
