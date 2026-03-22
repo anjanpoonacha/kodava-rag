@@ -2,7 +2,7 @@
 
 ## Diagram 1: User Query Flow
 
-Shows the full lifecycle of a `POST /query` or `/agent/stream` request: XSUAA authentication,
+Shows the full lifecycle of a `POST /query` or `/agent/stream` request: OAuth2 JWT authentication,
 multi-turn Claude tool-use loop, hybrid BM25 + dense retrieval, and response delivery.
 
 ```mermaid
@@ -10,17 +10,17 @@ sequenceDiagram
     autonumber
 
     participant Browser
-    participant Approuter as Approuter<br/>(XSUAA)
+    participant Approuter as Approuter<br/>(OAuth2 / JWT)
     participant FastAPI as FastAPI<br/>(lingua-api:8000)
     participant AgentLoop as AgentLoop<br/>(core/agent.py)
     participant GitHub as GitHub<br/>(raw.githubusercontent.com)
     participant BM25Engine as BM25Engine<br/>(core/retriever.py)
     participant VectorIndex as VectorIndex<br/>(core/vector_index.py)
-    participant EmbedAPI as EmbedAPI<br/>(sap-ai-proxy:3030)
-    participant Claude as Claude<br/>(via sap-ai-proxy → SAP AI Core)
+    participant EmbedAPI as EmbedAPI<br/>(ai-proxy:3030)
+    participant Claude as Claude<br/>(via ai-proxy → LLM backend)
 
-    Browser->>Approuter: POST /query {query, collection} + XSUAA JWT
-    Approuter->>Approuter: Validate JWT (XSUAA introspection)
+    Browser->>Approuter: POST /query + JWT token
+    Approuter->>Approuter: Validate JWT
     Approuter->>FastAPI: Forward request (validated identity)
 
     FastAPI->>AgentLoop: run_with_trace(query)
@@ -92,7 +92,7 @@ sequenceDiagram
     participant GitHubClone as GitHubClone<br/>(git clone anjanpoonacha/thakk)
     participant BuildCorpus as BuildCorpus<br/>(scripts/build_corpus.py)
     participant Ingesters as Ingesters<br/>(ingesters/)
-    participant EmbedAPI as EmbedAPI<br/>(sap-ai-proxy:3030)
+    participant EmbedAPI as EmbedAPI<br/>(ai-proxy:3030)
     participant Uvicorn as Uvicorn<br/>(api/app.py)
     participant GitHub as GitHub<br/>(raw.githubusercontent.com)
 
@@ -151,5 +151,5 @@ sequenceDiagram
         Note over Uvicorn: Log: "vector index ready — 3284 docs"
     end
 
-    Uvicorn-->>Entrypoint: Application startup complete ✓
+    Uvicorn-->>Entrypoint: Application startup complete
 ```
