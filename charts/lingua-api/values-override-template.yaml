@@ -3,7 +3,7 @@
 #   cp charts/lingua-api/values-override-template.yaml charts/lingua-api/values-<env>.yaml
 #   helm upgrade --install lingua-api ./charts/lingua-api -f charts/lingua-api/values-<env>.yaml
 
-namespace: ""
+# namespace: ""         # optional — defaults to helm -n flag if unset
 
 registry: ""           # e.g. ghcr.io/myorg  |  docker.io/myuser  |  <corp>.repositories.cloud.sap/team
 imagePullSecret: ""    # name of the k8s secret holding registry credentials

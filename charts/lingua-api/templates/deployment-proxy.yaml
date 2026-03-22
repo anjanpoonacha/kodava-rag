@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sap-ai-proxy
-  namespace: {{ .Values.namespace }}
+  namespace: {{ include "lingua-api.namespace" . }}
   labels:
     app: sap-ai-proxy
     app.kubernetes.io/managed-by: Helm

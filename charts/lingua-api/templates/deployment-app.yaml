@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: lingua-api
-  namespace: {{ .Values.namespace }}
+  namespace: {{ include "lingua-api.namespace" . }}
   labels:
     app: lingua-api
     app.kubernetes.io/managed-by: Helm

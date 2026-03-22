@@ -2,7 +2,7 @@ apiVersion: services.cloud.sap.com/v1
 kind: ServiceInstance
 metadata:
   name: {{ .Values.xsuaa.instanceName }}
-  namespace: {{ .Values.namespace }}
+  namespace: {{ include "lingua-api.namespace" . }}
   labels:
     app: lingua-api
     app.kubernetes.io/managed-by: Helm
@@ -35,7 +35,7 @@ apiVersion: services.cloud.sap.com/v1
 kind: ServiceBinding
 metadata:
   name: {{ .Values.xsuaa.bindingName }}
-  namespace: {{ .Values.namespace }}
+  namespace: {{ include "lingua-api.namespace" . }}
   labels:
     app: lingua-api
     app.kubernetes.io/managed-by: Helm

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: lingua-api
-  namespace: {{ .Values.namespace }}
+  namespace: {{ include "lingua-api.namespace" . }}
   labels:
     app: lingua-api
 spec:
@@ -23,7 +23,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sap-ai-proxy
-  namespace: {{ .Values.namespace }}
+  namespace: {{ include "lingua-api.namespace" . }}
   labels:
     app: sap-ai-proxy
 spec:

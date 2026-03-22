@@ -3,7 +3,9 @@
 #   helm upgrade --install lingua-api ./charts/lingua-api -f charts/lingua-api/values-kyma.yaml
 #   helm upgrade --install lingua-api ./charts/lingua-api --set registry=ghcr.io/myorg
 
-namespace: default
+# Namespace — override in values-<env>.yaml or via helm -n flag.
+# If unset, falls back to .Release.Namespace (the -n flag).
+# namespace: my-namespace
 
 # Shared container registry for all images.
 # Override per-image via app.registry / approuter.registry / proxy.registry.

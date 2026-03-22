@@ -12,3 +12,14 @@ Precedence:
 {{- $reg := .values.registry | default .root.Values.registry -}}
 {{- printf "%s/%s:%s" $reg .values.image .values.tag -}}
 {{- end -}}
+
+{{/*
+Resolve the target namespace.
+
+Precedence:
+  1. .Values.namespace  (values-kyma.yaml or --set)
+  2. .Release.Namespace (helm -n flag)
+*/}}
+{{- define "lingua-api.namespace" -}}
+{{- .Values.namespace | default .Release.Namespace -}}
+{{- end -}}

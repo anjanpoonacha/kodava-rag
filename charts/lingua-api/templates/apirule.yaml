@@ -2,7 +2,7 @@ apiVersion: gateway.kyma-project.io/v2
 kind: APIRule
 metadata:
   name: lingua-api
-  namespace: {{ .Values.namespace }}
+  namespace: {{ include "lingua-api.namespace" . }}
   labels:
     app: lingua-api
     app.kubernetes.io/managed-by: Helm
