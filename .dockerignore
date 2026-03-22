@@ -1,12 +1,39 @@
+# Version control
 .git
+.gitmodules
+
+# Secrets
 .env
+*.env
+
+# Python cache
 __pycache__
 *.pyc
 *.pyo
+*.pyd
+*.egg-info/
+
+# Data — fetched/built at container startup, never baked in
 data/raw/
 data/corpus/
 data/thakk/
-audio-vocab/
+
+# Audio / video files
 *.mp3
 *.mp4
+*.webm
+*.wav
+*.m4a
+*.flac
+
+# Dev tooling
+.opencode/
+eval/
 wireframe-*.png
+*.excalidraw
+screenshot-*.png
+
+# IDE / OS
+.vscode/
+.DS_Store
+*.swp
