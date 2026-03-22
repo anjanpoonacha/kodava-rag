@@ -63,6 +63,7 @@
       font-size: 14px;
       line-height: 1.5;
       word-break: break-word;
+      white-space: pre-wrap;
     }
 
     /* Assistant bubble */
@@ -165,6 +166,15 @@
     .status-label.approved { color: #6B9E7A; }
     .status-label.corrected { color: #B5763A; }
     .status-label.rejected  { color: #B06060; }
+    .status-label.error     { color: #B06060; }
+
+    .pr-link {
+      font-size: 11px;
+      padding-left: 4px;
+      color: #5A7BBF;
+    }
+    .pr-link a { color: inherit; text-decoration: underline; }
+    .pr-link a:hover { color: #3D5A99; }
 
     /* Correction form */
     .correction-form {
@@ -264,10 +274,44 @@
       40%            { opacity: 1;   transform: scale(1);   }
     }
 
+    /* Script selector bar */
+    .script-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-top: 1px solid #F0EDE8;
+      background: #fff;
+      flex-wrap: wrap;
+    }
+    .script-label {
+      font-size: 11px;
+      color: #AAA;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .script-btn {
+      background: none;
+      border: 1px solid #E5E2DC;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #888;
+      transition: all 0.15s;
+    }
+    .script-btn.active {
+      border-color: #B5763A;
+      color: #B5763A;
+      background: #FFF8F3;
+    }
+
     /* Input bar */
     .input-bar {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 8px;
       padding: 12px 16px;
       border-top: 1px solid #E5E2DC;
@@ -278,11 +322,16 @@
       flex: 1;
       padding: 9px 14px;
       border: 1px solid #E5E2DC;
-      border-radius: 20px;
+      border-radius: 14px;
       font-size: 14px;
       font-family: inherit;
       background: #FAFAF8;
       transition: border-color 0.15s;
+      resize: none;
+      overflow-y: hidden;
+      max-height: 120px;
+      line-height: 1.5;
+      display: block;
     }
     .input-field:focus { outline: none; border-color: #B5763A; }
 
@@ -441,11 +490,16 @@
               <!-- Status label after action -->
               <div x-show="ex.status !== null">
                 <span class="status-label" :class="ex.status">
-                  <span x-show="ex.status === 'approved'">approved</span>
-                  <span x-show="ex.status === 'rejected'">rejected</span>
+                  <span x-show="ex.status === 'approved'">staged for review</span>
+                  <span x-show="ex.status === 'rejected'">noted</span>
                   <span x-show="ex.status === 'corrected'">
-                    corrected: <em x-text="ex.correction"></em>
+                    staged: <em x-text="ex.correction"></em>
                   </span>
+                  <span x-show="ex.status === 'duplicate'">already in corpus</span>
+                  <span x-show="ex.status === 'error'">could not save — try again</span>
+                </span>
+                <span class="pr-link" x-show="ex.pr_url">
+                  <a :href="ex.pr_url" target="_blank" rel="noopener">view PR</a>
                 </span>
               </div>
             </div>
@@ -462,16 +516,31 @@
 
       </div>
 
+      <!-- Script preference bar -->
+      <div class="script-bar">
+        <span class="script-label">Script</span>
+        <template x-for="opt in scriptOptions" :key="opt.key">
+          <button
+            class="script-btn"
+            :class="{ active: scriptPref === opt.key }"
+            @click="scriptPref = (scriptPref === opt.key ? null : opt.key)"
+            x-text="opt.label">
+          </button>
+        </template>
+      </div>
+
       <!-- Input bar -->
       <div class="input-bar">
-        <input
+        <textarea
           class="input-field"
-          type="text"
+          rows="1"
+          x-ref="inputEl"
           x-model="input"
-          @keydown.enter="send()"
-          placeholder="Ask about Kodava takk..."
+          @keydown="handleEnter($event)"
+          @input="autoResize($refs.inputEl)"
+          placeholder="Ask about Kodava takk… (Shift+Enter for newline)"
           :disabled="loading"
-        >
+        ></textarea>
         <button
           class="send-btn"
           :class="{ 'stop-btn': loading }"
@@ -525,7 +594,15 @@
         correctingId: null,
         correctionTab: 'kodava',
         correctionText: '',
+        scriptPref: null,
         _abort: null,
+
+        scriptOptions: [
+          { key: 'roman',    label: 'English' },
+          { key: 'kannada',  label: 'Kannada ಕ' },
+          { key: 'devanagari', label: 'Devanagari' },
+          { key: 'all',      label: 'All scripts' },
+        ],
 
         correctionTabs: [
           { key: 'kodava',   label: 'Kodava form',    placeholder: 'corrected romanized form...' },
@@ -544,10 +621,25 @@
           return this.exchanges[this.exchanges.length - 1].context || [];
         },
 
+        handleEnter(e) {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            this.send();
+          }
+        },
+
+        autoResize(el) {
+          el.style.height = 'auto';
+          el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+        },
+
         async send() {
           const q = this.input.trim();
           if (!q || this.loading) return;
           this.input = '';
+          this.$nextTick(() => {
+            if (this.$refs.inputEl) this.$refs.inputEl.style.height = 'auto';
+          });
           this.loading = true;
           this._abort = new AbortController();
 
@@ -559,14 +651,29 @@
             context: [],
             status: null,
             correction: null,
+            pr_url: null,
           });
           this.$nextTick(() => this.scrollToBottom());
+
+          // Build multi-turn history from the last 6 completed exchanges.
+          const history = this.exchanges
+            .slice(0, idx)
+            .filter(e => e.answer && e.answer.length > 0)
+            .slice(-6)
+            .flatMap(e => [
+              { role: 'user',      content: e.query  },
+              { role: 'assistant', content: e.answer },
+            ]);
+
+          const body = { q };
+          if (history.length) body.history = history;
+          if (this.scriptPref)  body.script  = this.scriptPref;
 
           try {
             const res = await fetch('/agent/stream', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ q }),
+              body: JSON.stringify(body),
               signal: this._abort.signal,
             });
 
@@ -612,23 +719,36 @@
           if (this._abort) this._abort.abort();
         },
 
-        async submitFeedback(ex, status, correction = null) {
+        async submitFeedback(ex, status, correction = null, correctionType = null) {
           const idx = this.exchanges.findIndex(e => e.id === ex.id);
           if (idx !== -1) {
-            this.exchanges[idx] = { ...this.exchanges[idx], status, correction };
+            this.exchanges[idx] = { ...this.exchanges[idx], status, correction, pr_url: null };
           }
           try {
-            await fetch('/feedback', {
+            const res = await fetch('/feedback', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                query:      ex.query,
-                answer:     ex.answer,
-                correction: correction,
-                status:     status,
+                query:           ex.query,
+                answer:          ex.answer,
+                correction:      correction,
+                correction_type: correctionType,
+                status:          status,
               }),
             });
-          } catch (_) { /* non-blocking */ }
+            const data = await res.json();
+            if (idx !== -1) {
+              if (data.duplicate) {
+                this.exchanges[idx] = { ...this.exchanges[idx], status: 'duplicate', pr_url: null };
+              } else if (data.pr_url) {
+                this.exchanges[idx] = { ...this.exchanges[idx], pr_url: data.pr_url };
+              }
+            }
+          } catch (_) {
+            if (idx !== -1) {
+              this.exchanges[idx] = { ...this.exchanges[idx], status: 'error' };
+            }
+          }
         },
 
         startCorrection(id) {
@@ -645,9 +765,9 @@
         async submitCorrection(ex) {
           const text = this.correctionText.trim();
           if (!text) return;
-          const label = `[${this.correctionTab}] ${text}`;
+          const type = this.correctionTab;
           this.cancelCorrection();
-          await this.submitFeedback(ex, 'corrected', label);
+          await this.submitFeedback(ex, 'corrected', text, type);
         },
 
         renderMd(text) {

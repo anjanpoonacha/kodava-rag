@@ -152,6 +152,34 @@ def _tool_result_block(tool_use_id: str, docs: list[dict]) -> dict:
 
 _MAX_TOOL_ROUNDS = 3
 
+_SCRIPT_INSTRUCTIONS: dict[str, str] = {
+    "roman": (
+        "Respond using romanized transliteration only for Kodava words. "
+        "Do not include Kannada script (ಕನ್ನಡ) or Devanagari script."
+    ),
+    "kannada": (
+        "For every Kodava word or phrase, include the Kannada script alongside "
+        "the romanized form. Format: romanized (ಕನ್ನಡ). "
+        "Do not include Devanagari script."
+    ),
+    "devanagari": (
+        "For every Kodava word or phrase, transliterate it into Devanagari script "
+        "and show it alongside the romanized form. Format: romanized (देवनागरी). "
+        "Use Devanagari only — do NOT include Kannada script (ಕನ್ನಡ)."
+    ),
+    "all": (
+        "For every Kodava word or phrase, provide all three forms: "
+        "romanized transliteration, Kannada script (ಕನ್ನಡ), and Devanagari script. "
+        "Format: romanized (ಕನ್ನಡ / देवनागरी)."
+    ),
+}
+
+
+def _script_note(script: str | None) -> str:
+    if not script:
+        return ""
+    return _SCRIPT_INSTRUCTIONS.get(script, "")
+
 
 def _agent_loop(
     query: str,
@@ -213,7 +241,11 @@ def _agent_loop(
 # ---------------------------------------------------------------------------
 
 
-def run(query: str, history: list[dict] | None = None) -> str:
+def run(
+    query: str,
+    history: list[dict] | None = None,
+    script: str | None = None,
+) -> str:
     """Full pipeline — tool-use loop then blocking answer generation."""
     system = load_prompt("rag_assistant")
     messages, trace = _agent_loop(query, history, system)
@@ -232,12 +264,14 @@ def run(query: str, history: list[dict] | None = None) -> str:
     # for a final answer explicitly with accumulated context injected.
     client = _make_client()
     ctx_block = json.dumps(trace.all_context, ensure_ascii=False, indent=2)
+    note = _script_note(script)
     messages.append(
         {
             "role": "user",
             "content": (
                 f"Based on the search results above, answer the original question.\n\n"
                 f"Retrieved context:\n{ctx_block}\n\nQuery: {query}"
+                + (f"\n\nScript preference: {note}" if note else "")
             ),
         }
     )
@@ -259,7 +293,11 @@ def run(query: str, history: list[dict] | None = None) -> str:
 _CONTEXT_SENTINEL = "\x00ctx\x00"
 
 
-def stream(query: str, history: list[dict] | None = None) -> Iterator[str]:
+def stream(
+    query: str,
+    history: list[dict] | None = None,
+    script: str | None = None,
+) -> Iterator[str]:
     """Tool-use loop (blocking) then stream the answer token by token.
 
     Yields answer tokens followed by a single sentinel string carrying the
@@ -282,12 +320,14 @@ def stream(query: str, history: list[dict] | None = None) -> Iterator[str]:
     if messages and messages[-1]["role"] == "assistant":
         messages = messages[:-1]
 
+    note = _script_note(script)
     messages.append(
         {
             "role": "user",
             "content": (
                 f"Based on the search results above, answer the original question.\n\n"
                 f"Retrieved context:\n{ctx_block}\n\nQuery: {query}"
+                + (f"\n\nScript preference: {note}" if note else "")
             ),
         }
     )
@@ -307,7 +347,11 @@ def stream(query: str, history: list[dict] | None = None) -> Iterator[str]:
     yield _CONTEXT_SENTINEL + json.dumps(trace.all_context, ensure_ascii=False)
 
 
-def run_with_trace(query: str, history: list[dict] | None = None) -> AgentTrace:
+def run_with_trace(
+    query: str,
+    history: list[dict] | None = None,
+    script: str | None = None,
+) -> AgentTrace:
     """Run and return full trace including search calls and final answer."""
     system = load_prompt("rag_assistant")
     messages, trace = _agent_loop(query, history, system)
@@ -323,12 +367,14 @@ def run_with_trace(query: str, history: list[dict] | None = None) -> AgentTrace:
 
     client = _make_client()
     ctx_block = json.dumps(trace.all_context, ensure_ascii=False, indent=2)
+    note = _script_note(script)
     messages.append(
         {
             "role": "user",
             "content": (
                 f"Based on the search results above, answer the original question.\n\n"
                 f"Retrieved context:\n{ctx_block}\n\nQuery: {query}"
+                + (f"\n\nScript preference: {note}" if note else "")
             ),
         }
     )
