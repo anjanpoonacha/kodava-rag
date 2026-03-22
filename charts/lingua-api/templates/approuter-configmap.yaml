@@ -11,6 +11,9 @@ data:
     {
       "authenticationMethod": "route",
       "sessionTimeout": 60,
+      "compression": {
+        "enabled": false
+      },
       "routes": [
         {
           "source": "^(.*)$",
