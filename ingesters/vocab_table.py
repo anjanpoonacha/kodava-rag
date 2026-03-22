@@ -10,9 +10,21 @@ _CELL = r"\s*([^\|]{2,120}?)\s*"
 
 
 def _cells(line: str) -> list[str]:
-    """Return stripped cell values from a markdown table row, backtick-free."""
+    """Return stripped cell values from a markdown table row, backtick-free.
+
+    Only the empty leading and trailing tokens (produced by the opening and
+    closing pipe characters) are removed.  Empty inner cells — e.g. an
+    intentionally blank Explanation column — are preserved so that column
+    positions remain stable in 4-column tables.
+    """
     parts = [c.strip().strip("`") for c in line.split("|")]
-    return [p for p in parts if p]  # drop empty edge tokens
+    # Strip leading empty token (before the first |)
+    if parts and not parts[0]:
+        parts = parts[1:]
+    # Strip trailing empty token (after the last |)
+    if parts and not parts[-1]:
+        parts = parts[:-1]
+    return parts
 
 
 @register
