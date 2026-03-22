@@ -35,6 +35,31 @@ spec:
                 secretKeyRef:
                   name: lingua-api-secrets
                   key: ANTHROPIC_API_KEY
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: lingua-api-secrets
+                  key: GITHUB_TOKEN
+            - name: GITHUB_REPO
+              valueFrom:
+                secretKeyRef:
+                  name: lingua-api-secrets
+                  key: GITHUB_REPO
+            - name: GITHUB_BRANCH
+              valueFrom:
+                secretKeyRef:
+                  name: lingua-api-secrets
+                  key: GITHUB_BRANCH
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: lingua-api-secrets
+                  key: ADMIN_TOKEN
+            - name: REBUILD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: lingua-api-secrets
+                  key: REBUILD_TOKEN
             - name: PROMPT_FETCH
               value: {{ .Values.app.promptFetch | default "true" | quote }}
             - name: PROMPT_REPO
