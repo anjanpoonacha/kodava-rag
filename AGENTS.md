@@ -62,11 +62,11 @@ RAG pipeline (core/retriever.py + core/llm.py)
 
 | Path | Contents |
 |---|---|
-| `data/thakk/corpus/vocabulary.jsonl` | Curated vocabulary entries |
-| `data/thakk/corpus/sentences.jsonl` | Verified sentences and feedback |
-| `data/thakk/corpus/grammar_rules.jsonl` | Grammar rules and corrections |
-| `data/thakk/corpus/phonemes.jsonl` | Phoneme mappings |
-| `data/thakk/phoneme_table/kodava_devanagari_map.json` | Full phoneme → Devanagari/Kannada map |
+| `data/thakk/corpus/vocabulary.md` | Curated vocabulary entries (Markdown table) |
+| `data/thakk/corpus/sentences.md` | Verified sentences and feedback (Markdown table) |
+| `data/thakk/corpus/grammar_rules.md` | Grammar rules and corrections (Markdown table) |
+| `data/thakk/corpus/phonemes.md` | Phoneme mappings (Markdown table) |
+| `data/thakk/phoneme_table/kodava_devanagari_map.json` | Full phoneme → Devanagari/Kannada map — **single source of truth for phoneme rules** |
 | `data/thakk/kodava_corrections.md` | Native speaker corrections |
 | `data/thakk/elementary_kodava_FINAL.md` | Primary textbook source |
 | `data/thakk/audio-vocab/` | Session vocab tables and transcriptions |
@@ -84,6 +84,8 @@ RAG pipeline (core/retriever.py + core/llm.py)
 | `core/github_sync.py` | Submodule update + feedback write-back API |
 | `scripts/build_corpus.py` | Corpus builder — runs all ingesters |
 | `scripts/fill_kannada.py` | Batch-fill empty `kannada` fields |
+| `scripts/generate_phoneme_rules.py` | Re-generates phoneme lookup tables in all prompts from the phoneme map |
+| `scripts/convert_corpus_to_md.py` | One-time migration utility: JSONL → Markdown table |
 | `ingesters/` | One ingester per data source type |
 | `eval/baseline.py` | Structural health probe (retrieval + corpus + prompt) |
 | `eval/promptfoo/` | LLM eval suite (promptfoo) |
@@ -193,7 +195,38 @@ The flag accepts a plain string (substring match) or a `/regex/` pattern.
 - **`oa`** is a single long-O vowel → `ಓ` in Kannada, never `ಓ+ಅ`
 - **`adh`** (demonstrative "that/it") → `ಅಧ` — lexical exception to the `dh → ದ` rule
 - **`d`** in Kodava = retroflex `ಡ`; **`dh`** = dental `ದ` — opposite of standard romanisation
-- **Phoneme rules live in two places** — keep `prompts/fill_kannada.md` and `prompts/rag_assistant.md` in sync
+- **Phoneme rules have a single source of truth** — `kodava_devanagari_map.json` → run `generate_phoneme_rules.py` after any change
+
+### Phoneme Rules Workflow
+
+The raw lookup tables in the three prompts are auto-generated from `kodava_devanagari_map.json`.
+After editing the phoneme map, regenerate all three files in one command:
+
+```bash
+python scripts/generate_phoneme_rules.py
+
+# Review what changed
+git diff prompts/ scripts/transcribe_audio.py
+
+# Commit
+git add prompts/ scripts/transcribe_audio.py
+git commit -m "prompts: regenerate phoneme rules from phoneme map"
+```
+
+**What gets generated** (inside `<!-- PHONEME-RULES:X:BEGIN/END -->` markers):
+- Vowel lookup table (standalone char + matra + sound hint)
+- Standard consonant list
+- Geminate table (including `NN→ಣ್ಣ` / `nn→ನ್ನ` distinction note)
+- Nasal clusters
+
+**What stays hand-authored** (outside the markers — never touched by the generator):
+- `e` positional rule (initial standalone ಎ / medial/final matra ೆ) + examples
+- `ea` / `oa` NEVER-split rules
+- `adh→ಅಧ` lexical exception and NEVER guards
+- `NN` vs `nn`, `ny` NEVER-write-as-ನ+ಯ distinction notes
+- Worked examples section in `fill_kannada.md`
+- KNOWN SPELLING CORRECTIONS in `transcribe_audio.py`
+- All confidence-flag rules, response format, and framing text in `rag_assistant.md`
 
 ---
 
@@ -201,6 +234,7 @@ The flag accepts a plain string (substring match) or a `/regex/` pattern.
 
 - **Never edit `data/corpus/`** — it is a generated artifact, always rebuilt by `build_corpus.py`
 - **All curated language data lives in `data/thakk/`** — commit there, not here
+- **Curated corpus files are Markdown tables** (`data/thakk/corpus/*.md`) — edit them directly; the old `.jsonl` files have been removed
 
 ---
 
@@ -210,7 +244,7 @@ Each file in `data/thakk/` is handled by exactly one ingester (first match wins)
 
 | Ingester | Matches | Output type |
 |---|---|---|
-| `corpus_jsonl.py` | `corpus/*.jsonl` | passthrough (preserves original IDs) |
+| `corpus_md.py` | `corpus/*.md` | passthrough (preserves original IDs) |
 | `vocab_table.py` | `*vocab_table*.md` | vocabulary |
 | `corrections.py` | `*corrections*.md` | grammar_rule |
 | `phoneme_map.py` | `*devanagari_map*.json` | phoneme |

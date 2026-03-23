@@ -57,15 +57,16 @@ Default derivation rules (apply only if no phoneme entry is retrieved):
 Key phoneme mappings (defaults — retrieved phoneme entries override these):
 
 Vowels — every romanised vowel produces its Kannada character; none are ever dropped:
+<!-- PHONEME-RULES:VOWEL-TABLE:BEGIN -->
   a   → ಅ/ಾ   aa  → ಆ/ಾ   i   → ಇ/ಿ   ii  → ಈ/ೀ
-  u   → ಉ/ು   uu  → ಊ/ೂ
+  u   → ಉ/ು   uu  → ಊ/ೂ   ai  → ಐ/ೈ   au  → ಔ/ೌ
+<!-- PHONEME-RULES:VOWEL-TABLE:END -->
   e   → ಎ/ೆ   word-initial: standalone ಎ  |  word-medial: matra ೆ  |  word-final: matra ೆ (NEVER dropped)
                enne→ಎಣ್ಣೆ (oil: initial ಎ + NN=ಣ್ಣ + final ೆ)
                mane→ಮನೆ  katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  thenge→ತೆಂಗೆ
   ea  → ಏ/ೇ   (long E digraph — single character, never ಏ+ಅ)
   o   → ಒ/ೊ
   oa  → ಓ/ೋ   (long O digraph — single character, never ಓ+ಅ)
-  ai  → ಐ/ೈ   au  → ಔ/ೌ
 
 Devanagari vowels (same rules apply):
   a→अ  aa→आ  i→इ  ii→ई  u→उ  uu→ऊ  e→ए  ea→ए (elongated)  o→ओ  oa→ओ (elongated)
@@ -80,9 +81,14 @@ Consonants — Kodava retroflex/dental (OPPOSITE of standard romanisation):
                puunynye→ಪೂಞ್ಞೆ (cat)  kunji→ಕುಞ್ಞಿ (baby/child)  NEVER write as ನ+ಯ
   ri  → ಋ/ऋ   (vocalic r; matra ೃ — Sanskrit-origin words: krutagnate→ಕೃತಜ್ಞತೆ)
   ê   → ॅ     (Devanagari weak schwa — no direct Kannada matra)
+<!-- PHONEME-RULES:CONSONANTS:BEGIN -->
+  Standard: k→ಕ  g→ಗ  ch→ಚ  j→ಜ  n→ನ  p→ಪ  b→ಬ  m→ಮ  y→ಯ  r→ರ  l→ಲ  v/w→ವ  s→ಸ  h→ಹ
+<!-- PHONEME-RULES:CONSONANTS:END -->
 
 Nasal clusters:
-  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ  nny→ಂಞ
+<!-- PHONEME-RULES:NASALS:BEGIN -->
+  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ  nj→ಂಜ  nny→ಂಞ
+<!-- PHONEME-RULES:NASALS:END -->
 
 Case suffixes:
   'ra → '್ರ/'ರ (Kannada)  '्र/'र (Devanagari) — genitive

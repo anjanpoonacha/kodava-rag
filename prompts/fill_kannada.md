@@ -14,22 +14,24 @@ actually spells 'a'. The Kannada inherent vowel is ಅ — it is present on
 every bare consonant automatically. An explicit vowel in the romanisation
 always requires an explicit matra in the script.
 
+<!-- PHONEME-RULES:VOWEL-TABLE:BEGIN -->
   Kodava  │ Standalone │ Matra (in CV syllable) │ Sound
   ────────┼────────────┼───────────────────────┼─────────────────────────
-  a       │ ಅ          │ ಾ                     │ u in country, bus
-  aa      │ ಆ          │ ಾ                     │ o in honest, odd
-  i       │ ಇ          │ ಿ                     │ i in itchy, wit
-  ii      │ ಈ          │ ೀ                     │ ee in seek, teeth
-  u       │ ಉ          │ ು                     │ oo in good, put
-  uu      │ ಊ          │ ೂ                     │ oo in oops, pool
-  e       │ ಎ          │ ೆ                     │ e in enter, egg  ← CRITICAL
-  ea      │ ಏ          │ ೇ                     │ a in make, wait (long E)
-  o       │ ಒ          │ ೊ                     │ a in water (Short O)
-  oa      │ ಓ          │ ೋ                     │ o in loan (long O)
-  ai      │ ಐ          │ ೈ                     │ i in kite, my
-  au      │ ಔ          │ ೌ                     │ ou in out, cow
+  a       │ ಅ          │ ಾ     │ u in country, bus
+  aa      │ ಆ          │ ಾ     │ o in honest, odd
+  i       │ ಇ          │ ಿ     │ i in itchy, wit
+  ii      │ ಈ          │ ೀ     │ ee in seek, teeth
+  u       │ ಉ          │ ು     │ oo in good, put
+  uu      │ ಊ          │ ೂ     │ oo in oops, pool
+  e       │ ಎ          │ ೆ     │ e in enter, egg  ← CRITICAL
+  ea      │ ಏ          │ ೇ     │ a in make, wait (long E)
+  o       │ ಒ          │ ೊ     │ a in water (Short O)
+  oa      │ ಓ          │ ೋ     │ o in loan (long O)
+  ai      │ ಐ          │ ೈ     │ i in kite, my
+  au      │ ಔ          │ ೌ     │ ou in out, cow
   ────────┼────────────┼───────────────────────┼─────────────────────────
   ê       │ (ಎ̈)        │ ೆ̈                     │ a in about (schwa — rare)
+<!-- PHONEME-RULES:VOWEL-TABLE:END -->
 
 CRITICAL — 'e' vowel rules (all positions):
 
@@ -58,9 +60,11 @@ CONSONANT MAPPINGS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Standard consonants:
+<!-- PHONEME-RULES:CONSONANTS:BEGIN -->
   k→ಕ  g→ಗ  ch→ಚ  j→ಜ
   n→ನ  p→ಪ  b→ಬ  m→ಮ
   y→ಯ  r→ರ  l→ಲ  v/w→ವ  s→ಸ  h→ಹ
+<!-- PHONEME-RULES:CONSONANTS:END -->
 
 Palatal nasal — the 'ny' digraph:
   ny   → ಞ    (palatal nasal — like 'ny' in canyon, mañana)
@@ -84,22 +88,26 @@ Retroflex series:
   ṭ/t → ಟ   ḍ/d → ಡ   Ṇ/N → ಣ   Ḷ/L/zh → ಳ
 
 Geminates (halant + repeated character):
-  kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ
-  tt→ಟ್ಟ   dd→ಡ್ಡ  DD→ಡ್ಡ   thth→ತ್ತ  dhdh→ದ್ದ
-  nn→ನ್ನ  NN→ಣ್ಣ  mm→ಮ್ಮ  ll→ಲ್ಲ   LL→ಳ್ಳ   rr→ರ್ರ
-  ss→ಸ್ಸ   pp→ಪ್ಪ   bb→ಬ್ಬ  nyny→ಞ್ಞ
+<!-- PHONEME-RULES:GEMINATES:BEGIN -->
+  kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ  thth→ತ್ತ  dhdh→ದ್ದ
+  nn→ನ್ನ  NN→ಣ್ಣ  mm→ಮ್ಮ  ll→ಲ್ಲ  LL→ಳ್ಳ  nyny→ಞ್ಞ
+  NOTE: nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N)
+        enne→ಎಣ್ಣೆ (oil)  kaNNu→ಕಣ್ಣು (eye)  poNNa→ಪೊಣ್ಣ (girl)
+<!-- PHONEME-RULES:GEMINATES:END -->
   NOTE: nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N)
         enne→ಎಣ್ಣೆ (oil)  kaNNu→ಕಣ್ಣು (eye)  poNNa→ಪೊಣ್ಣ (girl)
 
 Nasal clusters:
-  nd  → ಂಡ   (nasal + retroflex D)
-  ndh → ಂದ   (nasal + dental d)
-  nt  → ಂಟ   (nasal + retroflex T)
-  nth → ಂತ   (nasal + dental t)
-  ng  → ಂಗ   (nasal + g)
-  mb  → ಂಬ   (nasal + b)
-  nj  → ಂಜ   (nasal + j)
-  nny → ಂಞ   (nasal + palatal nasal ಞ: pinja→ಪಿಂಞ, minja→ಮಿಂಞ, inyoo→ಇಂಞೂ)
+<!-- PHONEME-RULES:NASALS:BEGIN -->
+  nd   → ಂಡ   (nasal + retroflex D)
+  ndh  → ಂದ   (nasal + dental d)
+  nt   → ಂಟ   (nasal + retroflex T)
+  nth  → ಂತ   (nasal + dental t)
+  ng   → ಂಗ   (nasal + g)
+  mb   → ಂಬ   (nasal + b)
+  nj   → ಂಜ   (nasal + j)
+  nny  → ಂಞ   (nasal + palatal nasal ಞ: pinja→ಪಿಂಞ, minja→ಮಿಂಞ, inyoo→ಇಂಞೂ)
+<!-- PHONEME-RULES:NASALS:END -->
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LEXICAL EXCEPTIONS
