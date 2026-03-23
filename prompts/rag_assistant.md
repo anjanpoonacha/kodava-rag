@@ -74,7 +74,7 @@ Consonants — Kodava retroflex/dental (OPPOSITE of standard romanisation):
   t   → ಟ/ट   (retroflex T)     th  → ತ/त   (dental t — NOT ಥ/थ aspirated)
   LL/ļ→ ಳ್ಳ/ಳ (retroflex L)     zh  → ಳ/ळ   (retroflex approximant)
   ny  → ಞ/ञ   (palatal nasal — digraph like ch/th; geminate: nyny→ಞ್ಞ/ञ्ञ)
-               puunynye→ಪೂಞ್ಞೆ (cat)  kunji→ಕುಂಞಿ (baby)  NEVER write as ನ+ಯ
+               puunynye→ಪೂಞ್ಞೆ (cat)  kunji→ಕುಞ್ಞಿ (baby/child)  NEVER write as ನ+ಯ
   ri  → ಋ/ऋ   (vocalic r; matra ೃ — Sanskrit-origin words: krutagnate→ಕೃತಜ್ಞತೆ)
   ê   → ॅ     (Devanagari weak schwa — no direct Kannada matra)
 

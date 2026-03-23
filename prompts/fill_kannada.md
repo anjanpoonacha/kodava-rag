@@ -58,10 +58,11 @@ Standard consonants:
 
 Palatal nasal — the 'ny' digraph:
   ny   → ಞ    (palatal nasal — like 'ny' in canyon, mañana)
-  nyny → ಞ್ಞ  (geminate — puunynye → ಪೂಞ್ಞೆ, cat)
-          kunji→ಕುಂಞಿ  minja→ಮಿಂಞ  pinja→ಪಿಂಞ  njandu→ಞಂಡು (crab)
+  nyny → ಞ್ಞ  (geminate — puunynye→ಪೂಞ್ಞೆ cat,  kunji→ಕುಞ್ಞಿ baby/child)
+          minja→ಮಿಂಞ  pinja→ಪಿಂಞ  njandu→ಞಂಡು (crab — word-initial ಞ)
+  nny  → ಂಞ  (anusvara+ಞ cluster — minja→ಮಿಂಞ, pinja→ಪಿಂಞ)
   NEVER write ny as ನ+ಯ — ಞ is a single character
-  NEVER write puunynye as ಪೂಂಜೆ — ಂಜ is nasal+j, not the palatal nasal
+  NEVER write puunynye as ಪೂಂಜೆ — ಂಜ is nasal+j, not palatal nasal ಞ
 
 Vocalic r (Sanskrit-origin words):
   ri  → ಋ/ೃ  (matra form ೃ in CV syllable)
@@ -131,7 +132,7 @@ EXAMPLES
   thenge     → ತೆಂಗೆ      (th=ತ, ng=ಂಗ, final e → ೆ)
   chatthe    → ಚತ್ತೆ      (ch=ಚ, tt=ಟ್ಟ, final e → ೆ)
   puunynye   → ಪೂಞ್ಞೆ    (ny=ಞ palatal nasal, nyny=ಞ್ಞ geminate, final e → ೆ)
-  kunji      → ಕುಂಞಿ     (ny=ಞ, nasal cluster ಂ before ಞ)
+  kunji      → ಕುಞ್ಞಿ    (nyny=ಞ್ಞ geminate — NOT ಕುಂಞಿ, no anusvara)
   koadu      → ಕೋಡ್       (oa=ಓ, d=ಡ retroflex)
   keaLu      → ಕೇಳ್       (ea=ಏ, L=ಳ retroflex)
 
