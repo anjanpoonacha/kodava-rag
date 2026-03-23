@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate phoneme lookup tables in prompts from the single source of truth.
 
-Source:  data/thakk/phoneme_table/kodava_devanagari_map.json
+Source:  data/thakk/phoneme_table/kodava_devanagari_map.md
 Targets: prompts/fill_kannada.md
          prompts/rag_assistant.md
          scripts/transcribe_audio.py
@@ -31,7 +31,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import re
 import sys
 from pathlib import Path
@@ -39,7 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-PHONEME_MAP = ROOT / "data" / "thakk" / "phoneme_table" / "kodava_devanagari_map.json"
+PHONEME_MAP = ROOT / "data" / "thakk" / "phoneme_table" / "kodava_devanagari_map.md"
 FILL_KANNADA = ROOT / "prompts" / "fill_kannada.md"
 RAG_ASSISTANT = ROOT / "prompts" / "rag_assistant.md"
 TRANSCRIBE = ROOT / "scripts" / "transcribe_audio.py"
@@ -488,11 +487,99 @@ def update_file(path: Path, sections: dict[str, str], dry_run: bool) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ─────────────────────────────────────────────────────────────────────────────
+# Markdown phoneme map loader
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Maps ## section headings in the .md file to their key in data["phonemes"]
+_MD_SECTION_TO_KEY = {
+    "Vowels": "vowels",
+    "Consonants": "consonants",
+    "Retroflex Consonants": "retroflex_consonants",
+    "Geminates": "geminate_consonants",
+}
+
+
+def _parse_md_table(lines: list[str]) -> list[dict]:
+    """Parse a Markdown table block into a list of row dicts."""
+    headers: list[str] = []
+    rows: list[dict] = []
+    for line in lines:
+        s = line.strip()
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if not headers:
+            headers = [h.lower() for h in cells]
+            continue
+        if all(re.match(r"^[-: ]+$", c) for c in cells):
+            continue
+        rows.append(dict(zip(headers, cells)))
+    return rows
+
+
+def load_phoneme_map() -> dict:
+    """Parse kodava_devanagari_map.md and return a dict matching the old JSON structure."""
+    text = PHONEME_MAP.read_text(encoding="utf-8")
+    lines = text.splitlines()
+
+    data: dict = {
+        "phonemes": {k: [] for k in _MD_SECTION_TO_KEY.values()},
+        "suffix_rules": [],
+    }
+
+    current_section: str | None = None
+    section_lines: list[str] = []
+
+    def _flush(section: str, buf: list[str]) -> None:
+        key = _MD_SECTION_TO_KEY.get(section)
+        if key:
+            for row in _parse_md_table(buf):
+                p: dict = {}
+                p["kodava"] = row.get("kodava", "")
+                p["devanagari"] = row.get("devanagari", "")
+                p["kannada"] = row.get("kannada", "")
+                p["hint"] = row.get("sound hint", "")
+                p["confidence"] = row.get("confidence", "⚠️")
+                p["type"] = row.get("type", key.rstrip("s"))
+                p["note"] = row.get("note", row.get("flag / note", ""))
+                if p["kodava"]:
+                    data["phonemes"][key].append(p)
+
+        elif section == "Case Suffixes":
+            for row in _parse_md_table(buf):
+                sr: dict = {}
+                sr["suffix"] = row.get("suffix", "")
+                sr["meaning"] = row.get("meaning", "")
+                sr["devanagari"] = row.get("devanagari", "")
+                sr["kannada"] = row.get("kannada", "")
+                sr["confidence"] = row.get("confidence", "⚠️")
+                sr["flag"] = row.get("flag", "")
+                sr["example"] = {"kodava": row.get("example", ""), "meaning": ""}
+                if sr["suffix"]:
+                    data["suffix_rules"].append(sr)
+
+    for line in lines:
+        m = re.match(r"^##\s+(.+)", line)
+        if m:
+            if current_section:
+                _flush(current_section, section_lines)
+            current_section = m.group(1).strip()
+            section_lines = []
+        else:
+            section_lines.append(line)
+
+    if current_section:
+        _flush(current_section, section_lines)
+
+    return data
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
     dry_run = "--dry-run" in sys.argv
-    data = json.loads(PHONEME_MAP.read_text(encoding="utf-8"))
+    data = load_phoneme_map()
 
     print("Generating from:", PHONEME_MAP.relative_to(ROOT))
     print()

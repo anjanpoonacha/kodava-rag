@@ -142,8 +142,9 @@ Consonants:
 
 Geminates:
 # PHONEME-RULES:GEMINATES:BEGIN
-  kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ  thth→ತ್ತ  dhdh→ದ್ದ  nn→ನ್ನ
-  NN→ಣ್ಣ  mm→ಮ್ಮ  ll→ಲ್ಲ  LL→ಳ್ಳ  nyny→ಞ್ಞ
+  kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ  tt→ಟ್ಟ  dd→ಡ್ಡ  DD→ಡ್ಡ
+  thth→ತ್ತ  dhdh→ದ್ದ  nn→ನ್ನ  NN→ಣ್ಣ  mm→ಮ್ಮ  ll→ಲ್ಲ  LL→ಳ್ಳ
+  rr→ರ್ರ  ss→ಸ್ಸ  pp→ಪ್ಪ  bb→ಬ್ಬ  nyny→ಞ್ಞ
   NOTE: nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N)
         enne→ಎಣ್ಣೆ (oil)  kaNNu→ಕಣ್ಣು (eye)  poNNa→ಪೊಣ್ಣ (girl)
 # PHONEME-RULES:GEMINATES:END
@@ -242,8 +243,9 @@ Consonants:
   ri→ಋ/ೃ  (vocalic r: krutagnate→ಕೃತಜ್ಞತೆ gratitude)
 Geminates:
 # PHONEME-RULES:GEMINATES:BEGIN (vocab)
-  kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ  thth→ತ್ತ  dhdh→ದ್ದ  nn→ನ್ನ
-  NN→ಣ್ಣ  mm→ಮ್ಮ  ll→ಲ್ಲ  LL→ಳ್ಳ  nyny→ಞ್ಞ
+  kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ  tt→ಟ್ಟ  dd→ಡ್ಡ  DD→ಡ್ಡ
+  thth→ತ್ತ  dhdh→ದ್ದ  nn→ನ್ನ  NN→ಣ್ಣ  mm→ಮ್ಮ  ll→ಲ್ಲ  LL→ಳ್ಳ
+  rr→ರ್ರ  ss→ಸ್ಸ  pp→ಪ್ಪ  bb→ಬ್ಬ  nyny→ಞ್ಞ
   NOTE: nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N)
         enne→ಎಣ್ಣೆ (oil)  kaNNu→ಕಣ್ಣು (eye)  poNNa→ಪೊಣ್ಣ (girl)
 # PHONEME-RULES:GEMINATES:END (vocab)

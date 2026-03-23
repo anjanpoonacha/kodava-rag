@@ -69,6 +69,15 @@ Standard consonants:
 | N  | ಣ | retroflex N | ನ dental n |
 | L / zh | ಳ | retroflex L | ಲ dental l |
 
+**Retroflex series** — diacritic and uppercase forms map to the same characters:
+
+| Kodava | Kannada | Note |
+|--------|---------|------|
+| ṭ / t  | ಟ       | Retroflex T — diacritic form = same as plain t |
+| ḍ / d  | ಡ       | Retroflex D — diacritic form = same as plain d |
+| Ṇ / N  | ಣ       | Retroflex N |
+| Ḷ / L / zh | ಳ   | Retroflex L / approximant |
+
 **Special consonants:**
 
 | Kodava | Kannada | Note |
@@ -82,9 +91,12 @@ Geminates (halant + repeated character):
 | Kodava | Kannada | Kodava | Kannada | Kodava | Kannada |
 | ------ | ------- | ------ | ------- | ------ | ------- |
 | kk | ಕ್ಕ | gg | ಗ್ಗ | chch | ಚ್ಚ |
-| jj | ಜ್ಜ | thth | ತ್ತ | dhdh | ದ್ದ |
+| jj | ಜ್ಜ | tt | ಟ್ಟ | dd | ಡ್ಡ |
+| DD | ಡ್ಡ | thth | ತ್ತ | dhdh | ದ್ದ |
 | nn | ನ್ನ | NN | ಣ್ಣ | mm | ಮ್ಮ |
-| ll | ಲ್ಲ | LL | ಳ್ಳ | nyny | ಞ್ಞ |
+| ll | ಲ್ಲ | LL | ಳ್ಳ | rr | ರ್ರ |
+| ss | ಸ್ಸ | pp | ಪ್ಪ | bb | ಬ್ಬ |
+| nyny | ಞ್ಞ |  |  |  |  |
 | nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N) — enne→ಎಣ್ಣೆ, kaNNu→ಕಣ್ಣು, poNNa→ಪೊಣ್ಣ | | | | | |
 <!-- PHONEME-RULES:GEMINATES:END -->
 
