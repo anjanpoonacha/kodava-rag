@@ -58,45 +58,73 @@ Key phoneme mappings (defaults — retrieved phoneme entries override these):
 
 Vowels — every romanised vowel produces its Kannada character; none are ever dropped:
 <!-- PHONEME-RULES:VOWEL-TABLE:BEGIN -->
-  a   → ಅ/ಾ   aa  → ಆ/ಾ   i   → ಇ/ಿ   ii  → ಈ/ೀ
-  u   → ಉ/ು   uu  → ಊ/ೂ   ai  → ಐ/ೈ   au  → ಔ/ೌ
+| Kodava | Kannada | Devanagari |
+|--------|---------|-----------|
+| a      | ಅ/ಾ | अ/ा |
+| aa     | ಆ/ಾ | आ/ा |
+| i      | ಇ/ಿ | इ/ि |
+| ii     | ಈ/ೀ | ई/ी |
+| u      | ಉ/ು | उ/ु |
+| uu     | ಊ/ೂ | ऊ/ू |
+| ai     | ಐ/ೈ | ऐ/ै |
+| au     | ಔ/ೌ | औ/ौ |
 <!-- PHONEME-RULES:VOWEL-TABLE:END -->
-  e   → ಎ/ೆ   word-initial: standalone ಎ  |  word-medial: matra ೆ  |  word-final: matra ೆ (NEVER dropped)
-               enne→ಎಣ್ಣೆ (oil: initial ಎ + NN=ಣ್ಣ + final ೆ)
-               mane→ಮನೆ  katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  thenge→ತೆಂಗೆ
-  ea  → ಏ/ೇ   (long E digraph — single character, never ಏ+ಅ)
-  o   → ಒ/ೊ
-  oa  → ಓ/ೋ   (long O digraph — single character, never ಓ+ಅ)
 
-Devanagari vowels (same rules apply):
-  a→अ  aa→आ  i→इ  ii→ई  u→उ  uu→ऊ  e→ए  ea→ए (elongated)  o→ओ  oa→ओ (elongated)
+| Kodava | Kannada | Rule |
+|--------|---------|------|
+| e (initial) | standalone ಎ | Not a matra — enne→**ಎ**ಣ್ಣೆ |
+| e (medial)  | matra ೆ       | thenge→ತ**ೆ**ಂಗ**ೆ** |
+| e (final)   | matra ೆ       | **NEVER** bare consonant — mane→ಮನ**ೆ** NOT ಮನ |
+| ea | ಏ/ೇ | Long-E digraph — **NEVER** ಏ+ಅ |
+| o  | ಒ/ೊ | Short O |
+| oa | ಓ/ೋ | Long-O digraph — **NEVER** ಓ+ಅ |
+| ê  | ॅ   | Devanagari weak schwa — no direct Kannada matra |
 
-Consonants — Kodava retroflex/dental (OPPOSITE of standard romanisation):
-  d   → ಡ/ड   (retroflex D)     dh  → ದ/द   (dental d — NOT ಧ/ध aspirated)
-  t   → ಟ/ट   (retroflex T)     th  → ತ/त   (dental t — NOT ಥ/थ aspirated)
-  LL/ļ→ ಳ್ಳ/ಳ (retroflex L)     zh  → ಳ/ళ   (retroflex approximant)
-  NN  → ಣ್ಣ/ण्ण (retroflex N geminate — enne→ಎಣ್ಣೆ oil, kaNNu→ಕಣ್ಣು eye, poNNa→ಪೊಣ್ಣ girl)
-               NEVER write NN as nn→ನ್ನ (dental n geminate)
-  ny  → ಞ/ञ   (palatal nasal — digraph like ch/th; geminate: nyny→ಞ್ಞ/ञ्ञ)
-               puunynye→ಪೂಞ್ಞೆ (cat)  kunji→ಕುಞ್ಞಿ (baby/child)  NEVER write as ನ+ಯ
-  ri  → ಋ/ऋ   (vocalic r; matra ೃ — Sanskrit-origin words: krutagnate→ಕೃತಜ್ಞತೆ)
-  ê   → ॅ     (Devanagari weak schwa — no direct Kannada matra)
+Consonants — Kodava retroflex/dental (**OPPOSITE** of standard romanisation):
 <!-- PHONEME-RULES:CONSONANTS:BEGIN -->
-  Standard: k→ಕ  g→ಗ  ch→ಚ  j→ಜ  n→ನ  p→ಪ  b→ಬ  m→ಮ  y→ಯ  r→ರ  l→ಲ  v/w→ವ  s→ಸ  h→ಹ
+| Kodava | Kannada | Devanagari | Kodava | Kannada | Devanagari |
+|--------|---------|-----------|--------|---------|-----------|
+| k | ಕ | क | g | ಗ | ग |
+| ch | ಚ | च | j | ಜ | ज |
+| n | ನ | न | p | ಪ | प |
+| b | ಬ | ब | m | ಮ | म |
+| y | ಯ | य | r | ರ | र |
+| l | ಲ | ल | v/w | ವ | व |
+| s | ಸ | स | h | ಹ | ह |
 <!-- PHONEME-RULES:CONSONANTS:END -->
+
+| Kodava | Kannada | Devanagari | CRITICAL note |
+|--------|---------|-----------|---------------|
+| d   | ಡ | ड | Retroflex D — NOT ದ dental, NOT ಧ aspirated |
+| dh  | ದ | द | Dental d — NOT ಧ aspirated |
+| t   | ಟ | ट | Retroflex T — NOT ತ dental |
+| th  | ತ | त | Dental t — NOT ಥ aspirated |
+| NN  | ಣ್ಣ | ण्ण | Retroflex N geminate — enne→ಎಣ್ಳೆ; **NEVER** write as nn→ನ್ನ |
+| ny  | ಞ  | ञ | Palatal nasal — **NEVER** write as ನ+ಯ; geminate: nyny→ಞ್ಞ |
+| nyny| ಞ್ಞ | ञ्ञ | Geminate palatal nasal — puunynye→ಪೂಞ್ಞೆ, kunji→ಕುಞ್ಞಿ |
+| ri  | ಋ/ೃ | ऋ/ृ | Vocalic r — Sanskrit-origin words: krutagnate→ಕೃತಜ್ಞತೆ |
+| L/zh| ಳ   | ळ | Retroflex lateral |
 
 Nasal clusters:
 <!-- PHONEME-RULES:NASALS:BEGIN -->
-  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ  nj→ಂಜ  nny→ಂಞ
+| nd | ndh | nt | nth | ng | mb | nj | nny |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ಂಡ | ಂದ | ಂಟ | ಂತ | ಂಗ | ಂಬ | ಂಜ | ಂಞ |
 <!-- PHONEME-RULES:NASALS:END -->
 
 Case suffixes:
-  'ra → '್ರ/'ರ (Kannada)  '्र/'र (Devanagari) — genitive
-  'k  → ಕ್     (Kannada)  — dative / infinitive (mane'k, sante'k)
-  'l  → ಲ್     (Kannada)  — locative (mane'l, sante'l)
 
-Lexical exception — demonstrative root "adh" (that/it):
-  adh → ಅಧ/अध   (NOT ಅದ/अद — lexical form, dh→ದ rule does NOT apply here)
+| Suffix | Kannada | Devanagari | Case / Use | Example |
+|--------|---------|-----------|------------|---------|
+| 'k  | ಕ್ | क् | Dative / infinitive | mane'k → ಮನೆಕ್ |
+| 'l  | ಲ್ | ल् | Locative            | mane'l → ಮನೆಲ್ |
+| 'ra | ರ  | र  | Genitive            | mane'ra → ಮನೆರ |
+
+Lexical exceptions:
+
+| Kodava | Kannada | Devanagari | Rule |
+|--------|---------|-----------|------|
+| adh | ಅಧ | अध | Demonstrative "that/it" — uses ಧ, **NEVER** ದ; dh→ದ rule does NOT apply |
 
 Kannada-script queries — when the input contains Kannada Unicode characters:
 - Identify the romanised Kodava form from retrieved context

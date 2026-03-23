@@ -137,13 +137,11 @@ def _kn(p: dict) -> str:
 
 
 def _gen_vowel_table_fill(data: dict) -> str:
-    """Vowel table for fill_kannada.md (box-drawing table format).
+    """Vowel table for fill_kannada.md — Markdown table format.
 
-    Canonical order matches the existing file. Excludes nasalised vowels
-    (ãã, ĩĩ) which are too rare for the main table, and excludes ê/ri
-    which are in the hand-authored schwa row below the separator.
+    Canonical order. Excludes nasalised vowels (ãã, ĩĩ) which are too rare,
+    and ê/ri which appear in the hand-authored row below the table.
     """
-    # Ordered as they appear in the current prompt
     ordered = ["a", "aa", "i", "ii", "u", "uu", "e", "ea", "o", "oa", "ai", "au"]
     sounds = {
         "a": "u in country, bus",
@@ -152,39 +150,50 @@ def _gen_vowel_table_fill(data: dict) -> str:
         "ii": "ee in seek, teeth",
         "u": "oo in good, put",
         "uu": "oo in oops, pool",
-        "e": "e in enter, egg  ← CRITICAL",
-        "ea": "a in make, wait (long E)",
-        "o": "a in water (Short O)",
-        "oa": "o in loan (long O)",
+        "e": "e in enter, egg — **CRITICAL: see positional rule below**",
+        "ea": "a in make, wait (long E — digraph, never split)",
+        "o": "a in water (short O)",
+        "oa": "o in loan (long O — digraph, never split)",
         "ai": "i in kite, my",
         "au": "ou in out, cow",
     }
     lines = [
-        "  Kodava  │ Standalone │ Matra (in CV syllable) │ Sound",
-        "  ────────┼────────────┼───────────────────────┼─────────────────────────",
+        "| Kodava | Standalone | Matra (CV syllable) | Sound |",
+        "|--------|-----------|---------------------|-------|",
     ]
     for k in ordered:
         sa, ma = _KN_VOWELS.get(k, ("", ""))
         hint = sounds.get(k, "")
-        lines.append(f"  {k:<8}│ {sa:<11}│ {ma:<6}│ {hint}")
+        lines.append(f"| {k:<6} | {sa:<10} | {ma:<19} | {hint} |")
     lines += [
-        "  ────────┼────────────┼───────────────────────┼─────────────────────────",
-        "  ê       │ (ಎ̈)        │ ೆ̈                     │ a in about (schwa — rare)",
+        "| ê      | (ಎ̈)        | ೆ̈                   | a in about — weak schwa (rare) |",
     ]
     return "\n".join(lines)
 
 
 def _gen_vowel_table_rag(data: dict) -> str:
-    """Vowel table for rag_assistant.md — matches existing spacing style."""
+    """Vowel table for rag_assistant.md — Markdown table (Kannada + Devanagari)."""
     ordered = ["a", "aa", "i", "ii", "u", "uu", "ai", "au"]
-    parts = []
+    # Devanagari standalone vowels
+    dev = {
+        "a": "अ/ा",
+        "aa": "आ/ा",
+        "i": "इ/ि",
+        "ii": "ई/ी",
+        "u": "उ/ु",
+        "uu": "ऊ/ू",
+        "ai": "ऐ/ै",
+        "au": "औ/ौ",
+    }
+    lines = [
+        "| Kodava | Kannada | Devanagari |",
+        "|--------|---------|-----------|",
+    ]
     for k in ordered:
         sa, ma = _KN_VOWELS.get(k, ("", ""))
-        # Pad key to 4 chars for alignment
-        parts.append(f"{k:<4}→ {sa}/{ma}")
-    row1 = "  " + "   ".join(parts[:4])
-    row2 = "  " + "   ".join(parts[4:])
-    return row1 + "\n" + row2
+        d = dev.get(k, "")
+        lines.append(f"| {k:<6} | {sa}/{ma} | {d} |")
+    return "\n".join(lines)
 
 
 def _gen_vowel_table_py(data: dict, compact: bool = False) -> str:
@@ -217,24 +226,65 @@ _STD_CONS_EXCLUDED = {"th", "dh", "t", "d", "ny", "ri", "w"}
 
 
 def _gen_consonants_fill(data: dict) -> str:
-    kn = {"v/w": "ವ"}  # special alias
-    rows_out = []
-    for group in _STD_CONS_ROWS:
-        parts = []
+    """Standard consonant table for fill_kannada.md — Markdown table, 4 columns."""
+    kn_map = {"v/w": "ವ"}
+    ordered = [
+        ("k", "g", "ch", "j"),
+        ("n", "p", "b", "m"),
+        ("y", "r", "l", "v/w"),
+        ("s", "h"),
+    ]
+    lines = [
+        "| Kodava | Kannada | Kodava | Kannada | Kodava | Kannada | Kodava | Kannada |",
+        "|--------|---------|--------|---------|--------|---------|--------|---------|",
+    ]
+    for group in ordered:
+        cells = []
         for k in group:
-            kn_char = kn.get(k) or _KN_CONS.get(k, "")
-            parts.append(f"{k}→{kn_char}")
-        rows_out.append("  " + "  ".join(parts))
-    return "\n".join(rows_out)
+            kn_char = kn_map.get(k) or _KN_CONS.get(k, "")
+            cells += [k, kn_char]
+        # Pad to 8 cells
+        while len(cells) < 8:
+            cells += ["", ""]
+        lines.append("| " + " | ".join(cells) + " |")
+    return "\n".join(lines)
 
 
 def _gen_consonants_rag(data: dict) -> str:
-    # Flat list matching current rag_assistant.md format,
-    # excluding th/dh/t/d (in the hand-authored retroflex section) and ny/ri
+    """Standard consonant table for rag_assistant.md — Markdown table with Devanagari."""
+    # Devanagari for standard consonants
+    dev_map = {
+        "k": "क",
+        "g": "ग",
+        "ch": "च",
+        "j": "ज",
+        "n": "न",
+        "p": "प",
+        "b": "ब",
+        "m": "म",
+        "y": "य",
+        "r": "र",
+        "l": "ल",
+        "v/w": "व",
+        "s": "स",
+        "h": "ह",
+    }
+    kn_map = {"v/w": "ವ"}
     ordered = ["k", "g", "ch", "j", "n", "p", "b", "m", "y", "r", "l", "v/w", "s", "h"]
-    kn = {"v/w": "ವ"}
-    parts = [f"{k}→{kn.get(k) or _KN_CONS.get(k, '')}" for k in ordered]
-    return "  Standard: " + "  ".join(parts)
+    lines = [
+        "| Kodava | Kannada | Devanagari | Kodava | Kannada | Devanagari |",
+        "|--------|---------|-----------|--------|---------|-----------|",
+    ]
+    for i in range(0, len(ordered), 2):
+        row = []
+        for k in ordered[i : i + 2]:
+            kn_char = kn_map.get(k) or _KN_CONS.get(k, "")
+            d = dev_map.get(k, "")
+            row += [k, kn_char, d]
+        while len(row) < 6:
+            row += ["", "", ""]
+        lines.append("| " + " | ".join(row) + " |")
+    return "\n".join(lines)
 
 
 def _gen_consonants_py(data: dict) -> str:
@@ -250,21 +300,43 @@ def _gen_consonants_py(data: dict) -> str:
 
 
 def _gen_geminates(data: dict, compact: bool = False) -> str:
+    """Geminate table — Markdown for .md files, indented text for .py strings."""
     gems = data["phonemes"]["geminate_consonants"]
-    parts = []
+    pairs = []
     for p in gems:
         k = p["kodava"]
         kn = _kn(p) or p.get("devanagari", "")
-        parts.append(f"{k}→{kn}")
-    sep = "  "
-    rows = []
-    row_size = 7 if compact else 6
-    for i in range(0, len(parts), row_size):
-        rows.append("  " + sep.join(parts[i : i + row_size]))
-    # Preserve the nn/NN distinction note inside the generated block
-    rows.append("  NOTE: nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N)")
-    rows.append("        enne→ಎಣ್ಣೆ (oil)  kaNNu→ಕಣ್ಣು (eye)  poNNa→ಪೊಣ್ಣ (girl)")
-    return "\n".join(rows)
+        pairs.append((k, kn))
+
+    if compact:
+        # Indented text for Python prompt strings
+        parts = [f"{k}→{kn}" for k, kn in pairs]
+        row_size = 7
+        rows = []
+        for i in range(0, len(parts), row_size):
+            rows.append("  " + "  ".join(parts[i : i + row_size]))
+        rows.append("  NOTE: nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N)")
+        rows.append("        enne→ಎಣ್ಣೆ (oil)  kaNNu→ಕಣ್ಣು (eye)  poNNa→ಪೊಣ್ಣ (girl)")
+        return "\n".join(rows)
+    else:
+        # Markdown table — 6 columns (3 pairs per row)
+        cols_per_row = 6  # 3 Kodava + 3 Kannada, interleaved
+        header = "| " + " | ".join(["Kodava", "Kannada"] * 3) + " |"
+        sep = "| " + " | ".join(["------", "-------"] * 3) + " |"
+        lines = [header, sep]
+        for i in range(0, len(pairs), 3):
+            chunk = pairs[i : i + 3]
+            while len(chunk) < 3:
+                chunk.append(("", ""))
+            cells = []
+            for k, kn in chunk:
+                cells += [k, kn]
+            lines.append("| " + " | ".join(cells) + " |")
+        # NOTE row as a single-cell spanning row (use colspan via empty cells pattern)
+        lines.append(
+            "| nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N) — enne→ಎಣ್ಣೆ, kaNNu→ಕಣ್ಣು, poNNa→ಪೊಣ್ಣ | | | | | |"
+        )
+        return "\n".join(lines)
 
 
 def _gen_geminates_py_vocab(data: dict) -> str:
@@ -276,6 +348,7 @@ def _gen_geminates_py_vocab(data: dict) -> str:
 
 
 def _gen_nasals_fill(data: dict) -> str:
+    """Nasal clusters table for fill_kannada.md — 4-column Markdown table."""
     labels = {
         "nd": "nasal + retroflex D",
         "ndh": "nasal + dental d",
@@ -284,16 +357,35 @@ def _gen_nasals_fill(data: dict) -> str:
         "ng": "nasal + g",
         "mb": "nasal + b",
         "nj": "nasal + j",
-        "nny": "nasal + palatal nasal ಞ: pinja→ಪಿಂಞ, minja→ಮಿಂಞ, inyoo→ಇಂಞೂ",
+        "nny": "nasal + palatal ಞ: pinja→ಪಿಂಞ",
     }
-    lines = []
-    for k, kn in _NASAL_CLUSTERS.items():
-        label = labels.get(k, "")
-        lines.append(f"  {k:<4} → {kn}   ({label})")
+    items = list(_NASAL_CLUSTERS.items())
+    lines = [
+        "| Cluster | Kannada | Cluster | Kannada |",
+        "|---------|---------|---------|---------|",
+    ]
+    for i in range(0, len(items), 2):
+        row = []
+        for k, kn in items[i : i + 2]:
+            label = labels.get(k, "")
+            row += [k, f"{kn} ({label})" if label else kn]
+        while len(row) < 4:
+            row += ["", ""]
+        lines.append("| " + " | ".join(row) + " |")
     return "\n".join(lines)
 
 
+def _gen_nasals_rag(data: dict) -> str:
+    """Nasal clusters for rag_assistant.md — single-row Markdown table."""
+    cells = [f"{k}→{v}" for k, v in _NASAL_CLUSTERS.items()]
+    header = "| " + " | ".join(c.split("→")[0] for c in cells) + " |"
+    sep = "| " + " | ".join(["---"] * len(cells)) + " |"
+    vals = "| " + " | ".join(c.split("→")[1] for c in cells) + " |"
+    return "\n".join([header, sep, vals])
+
+
 def _gen_nasals_compact(data: dict) -> str:
+    """Nasal clusters for .py prompt strings — single compact line."""
     parts = [f"{k}→{v}" for k, v in _NASAL_CLUSTERS.items()]
     return "  " + "  ".join(parts)
 
@@ -405,25 +497,25 @@ def main() -> None:
     print("Generating from:", PHONEME_MAP.relative_to(ROOT))
     print()
 
-    # fill_kannada.md — table format with box-drawing characters
+    # fill_kannada.md — Markdown table format
     update_file(
         FILL_KANNADA,
         {
             "VOWEL-TABLE": _gen_vowel_table_fill(data),
             "CONSONANTS": _gen_consonants_fill(data),
-            "GEMINATES": _gen_geminates(data),
+            "GEMINATES": _gen_geminates(data, compact=False),
             "NASALS": _gen_nasals_fill(data),
         },
         dry_run,
     )
 
-    # rag_assistant.md — compact inline format
+    # rag_assistant.md — Markdown table format
     update_file(
         RAG_ASSISTANT,
         {
             "VOWEL-TABLE": _gen_vowel_table_rag(data),
             "CONSONANTS": _gen_consonants_rag(data),
-            "NASALS": _gen_nasals_compact(data),
+            "NASALS": _gen_nasals_rag(data),
         },
         dry_run,
     )
