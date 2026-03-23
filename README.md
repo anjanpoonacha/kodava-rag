@@ -28,44 +28,67 @@ make api    # → http://localhost:8000
 ## Architecture
 
 ```mermaid
-graph TD
-    Q[Query] --> API[FastAPI]
-    API --> BM25[BM25 Search]
-    BM25 -->|top 5 results| LLM[Claude Sonnet 4.6]
-    LLM --> R[Response]
+graph LR
+    CLIENT([HTTP Client])
 
-    FB[Feedback] --> API
-    API -->|approved / corrected| S[sentences.jsonl]
-    API -->|rejected| RV[review.jsonl]
-    S --> BM25
+    subgraph DATA["Data Pipeline"]
+        THAKK[(anjanpoonacha/thakk)]
+        INGEST[build_corpus.py]
+        CORPUS[(data/corpus)]
+        EMBED[(embeddings.npy)]
+        THAKK --> INGEST
+        INGEST --> CORPUS
+        INGEST --> EMBED
+    end
 
-    THAKK[anjanpoonacha/thakk] -->|sync_source_files| PROC[data/processed/]
-    PROC -->|ingesters| CRP[data/corpus/]
-    CRP --> BM25
+    subgraph QUERY["Query Path"]
+        BM25[BM25 Search]
+        DENSE[Vector Index]
+        RRF[RRF Merge]
+        AGENT[SearchingExpert]
+        PROMPT[rag_assistant.md]
+        CLAUDE[Claude Sonnet]
+        CORPUS --> BM25
+        EMBED --> DENSE
+        BM25 --> RRF
+        DENSE --> RRF
+        RRF -->|search_kodava| AGENT
+        AGENT --> CLAUDE
+        PROMPT --> CLAUDE
+    end
+
+    CLIENT -->|query| AGENT
+    CLAUDE -->|answer + context| CLIENT
+    CLIENT -->|feedback| THAKK
+    CLIENT -->|rebuild| INGEST
 ```
 
 ### Data flow
 
 ```
-anjanpoonacha/thakk
+anjanpoonacha/thakk  (git submodule → data/thakk/)
 ├── corpus/                   ← hand-curated seed entries (source of truth)
 │   ├── grammar_rules.jsonl   edit here to add/remove grammar corrections
 │   ├── vocabulary.jsonl
 │   ├── phonemes.jsonl
 │   └── sentences.jsonl
-└── training_data/            ← structured source files
-    ├── conjugations.jsonl
-    ├── grammar_flags.json
-    └── transliteration.json
-        ↓  github_sync.sync_source_files()
-data/processed/               ← local cache of thakk source (gitignored)
-        ↓  build_corpus.py + ingesters
+├── elementary_kodava_FINAL.md  ← 16-lesson textbook (vocabulary + sentences)
+├── audio-vocab/              ← session vocab tables from audio recordings
+├── training_data/            ← structured source files
+│   ├── conjugations.jsonl
+│   ├── grammar_flags.json
+│   └── transliteration.json
+└── phoneme_table/kodava_devanagari_map.json
+        ↓  github_sync.sync_source_files()  +  build_corpus.py + ingesters
 data/corpus/                  ← generated build output (gitignored)
+    vocabulary.jsonl              merged from corpus/ + vocab tables + textbook
     grammar_rules.jsonl           merged from corpus/ + grammar_flags.json + textbook
-    vocabulary.jsonl              merged from corpus/ + vocab tables
     phonemes.jsonl                merged from corpus/ + phoneme map
     sentences.jsonl               hand-verified entries preserved across builds
-    review.jsonl                  rejected feedback queue (never overwritten)
+    sentences_lesson.jsonl        lesson-tagged Q&A flashcards (split for BM25)
+    sentences_narrative.jsonl     audio/narrative paragraphs (split for BM25)
+    rejected.jsonl                rejected feedback queue (never overwritten)
+    embeddings.npy                dense vectors for hybrid retrieval
 ```
 
 **Do not push `data/corpus/` files back to thakk** — they are generated artefacts.
