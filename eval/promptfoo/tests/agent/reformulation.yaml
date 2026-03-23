@@ -2,6 +2,12 @@
 # Natural-language questions whose raw form scores poorly against BM25;
 # the agent must reformulate before retrieval succeeds.
 # Suite H verifies the first search_call query differs from the raw input.
+#
+# Suite J — "how to [verb]" two-search rule.
+# The agent prompt mandates two separate calls for any "how to [verb]" query:
+#   call 1: verb keyword  → adige maaduva
+#   call 2: "how manner"  → ennane
+# Without the second call, ennane is never retrieved and the answer is incomplete.
 
 - description: "agent — reformulation: 'how do I say good morning' finds polaaka"
   vars:
@@ -57,3 +63,27 @@
     - type: javascript
       # First search call must be a keyword form, not the raw sentence
       value: '!(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.[0]?.query?.startsWith(''what is'') ?? false)'
+
+# Suite J — "how to [verb]" two-search rule
+
+- description: "agent — how to cook: makes ≥2 search calls (verb + manner)"
+  vars:
+    query: "Translate: How to cook"
+  assert:
+    - type: javascript
+      # Agent must make at least 2 calls — one for the verb, one for "how"
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 2'
+
+- description: "agent — how to cook: answer contains ennane and adige maaduva"
+  vars:
+    query: "Translate: How to cook"
+  assert:
+    - type: javascript
+      value: '(((m=>m?JSON.parse(m[1]):{search_calls:[]})(output.match(/<!--META:([\s\S]*?)-->/))).search_calls?.length ?? 0) >= 2'
+    - type: icontains
+      value: "ennane"
+    - type: icontains
+      value: "adige maaduva"
+    - type: llm-rubric
+      value: "Response gives the Kodava phrase for 'how to cook' using ennane and adige maaduva"
+      threshold: 0.8

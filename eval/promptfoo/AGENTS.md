@@ -171,7 +171,14 @@ Short version:
 ```
 test fails
   → check search_all() — is the word in context?
-      NO  → Layer R: retrieval failure (enrich corpus explanation field)
+      NO  → Layer R: audit raw data FIRST
+                     grep -rn "<word>" data/thakk/audio-vocab/
+                     check vocab_table.md and transcription.md in every session:
+                       - wrong English gloss (ennange = "how" when it means "why")
+                       - spurious suffix merged into the word (ennanek vs ennane)
+                       - contradictory meaning across sessions
+                     fix the source file(s), then rebuild
+                     only if no raw data error: enrich corpus explanation field
       YES → check if model ignores context
               YES → Layer P: prompt failure (edit prompts/rag_assistant.md)
               NO  → Layer C: corpus gap (add word to data/thakk/corpus/)
@@ -187,6 +194,8 @@ After any corpus change: `python scripts/build_corpus.py`
 | Change | Where to make it |
 |---|---|
 | New word or sentence | `data/thakk/corpus/` (submodule) |
+| Fix corrupted word form or wrong gloss | `data/thakk/audio-vocab/<session>/vocab_table.md` |
+| Fix transcription error | `data/thakk/audio-vocab/<session>/transcription.md` |
 | Phoneme rule | `data/thakk/phoneme_table/` |
 | Prompt instruction | `prompts/rag_assistant.md` |
 | New eval regression | `tests/llm/tdd.yaml` → stable suite |

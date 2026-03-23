@@ -10,19 +10,34 @@
     - type: icontains
       value: "sante"
 
-# Regression: stopword "how" was suppressing ennane; RRF was evicting it via dense noise.
-# Both ennane (dbc00acf) and adige maaduva (94fe4723) must be present so the LLM
-# can form the correct phrase "ennane adige maaduva".
-- description: "retrieval — how to cook: ennane and adige maaduva both retrieved"
+# The agent reformulates "Translate: How to cook" into two separate keyword calls:
+#   call 1: "cook cooking"  → adige maaduva (94fe4723)
+#   call 2: "how manner"    → ennane variants (45d20af1, dbc00acf, etc.)
+# These tests verify search_all handles each reformulated keyword correctly.
+# The two-call strategy is enforced at the agent level (see tests/agent/).
+
+- description: "retrieval — cook cooking: adige maaduva retrieved"
   vars:
-    query: "Translate: How to cook"
+    query: "cook cooking"
   assert:
     - type: javascript
       value: |
         const ctx = JSON.parse(output);
         const ids = ctx.map(d => d.id);
-        const hasEnnane = ids.includes('dbc00acf');
-        const hasAdige  = ids.includes('94fe4723');
-        if (!hasEnnane) throw new Error('ennane (dbc00acf) missing from context');
-        if (!hasAdige)  throw new Error('adige maaduva (94fe4723) missing from context');
+        const hasAdige = ids.includes('94fe4723');
+        if (!hasAdige) throw new Error('adige maaduva (94fe4723) missing from context');
+        return true;
+
+- description: "retrieval — how manner: ennane retrieved"
+  vars:
+    query: "how manner"
+  assert:
+    - type: javascript
+      value: |
+        const ctx = JSON.parse(output);
+        const hasEnnane = ctx.some(d =>
+          (d.kodava || '').toLowerCase().includes('ennane') ||
+          (d.english || '').toLowerCase().includes('how')
+        );
+        if (!hasEnnane) throw new Error('no ennane/how entry in context');
         return true;

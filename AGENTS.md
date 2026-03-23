@@ -341,10 +341,29 @@ STEP 3 — Fix the right layer
 The entry is in the corpus but the retriever doesn't find it.
 
 **Common causes:**
+- A corrupted or mislabelled variant in a vocab table or transcription is outscoring the correct entry
 - Entry `explanation` field is empty — BM25 has only 1-2 tokens to match against
-- PER_COLLECTION cap (3) means the correct collection is crowded out by noise
+- PER_COLLECTION cap means the correct collection is crowded out by noise
 
-**Fix:**
+**Audit raw data first — before enriching explanation:**
+
+Check whether a bad variant of the word exists across audio-vocab sessions and is
+crowding out the correct entry. Common patterns: spurious suffix appended to the word
+(`ennanek` instead of `ennane`), wrong English gloss (`ennange = how` instead of `why`),
+or contradictory meaning across sessions.
+
+```bash
+# 1. Find all variants across vocab tables
+grep -rn "<word>" data/thakk/audio-vocab/
+
+# 2. Check for wrong gloss, spurious suffix, or contradictory meaning across sessions
+
+# 3. Fix the source file (vocab_table.md and/or transcription.md), rebuild
+cd data/thakk && git commit -am "corpus: fix <word> in <session> vocab_table/transcription"
+cd ../.. && python scripts/build_corpus.py
+```
+
+**Only if no raw data error — enrich explanation:**
 ```bash
 edit data/thakk/corpus/vocabulary.jsonl  # enrich explanation with natural paraphrases
 cd data/thakk && git commit -am "corpus: enrich <word> explanation for BM25"
