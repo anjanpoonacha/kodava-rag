@@ -205,9 +205,17 @@ Coverage rules:
   - Do NOT invent words not in the transcription.
 
 Kannada Script column — apply ALL rules:
-  oa→ಓ/ೋ (never split)  ea→ಏ/ೇ (never split)
+
+Vowels (every romanised vowel must produce its Kannada character — none are ever dropped):
+  a →ಅ/ಾ   aa→ಆ/ಾ   i →ಇ/ಿ   ii→ಈ/ೀ   u →ಉ/ು   uu→ಊ/ೂ
+  e →ಎ/ೆ   ← CRITICAL: word-final 'e' ALWAYS gets matra ೆ — never a bare consonant
+             e.g. katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  mane→ಮನೆ  thenge→ತೆಂಗೆ
+  ea→ಏ/ೇ  (long-E digraph — single character, NEVER ಏ+ಅ)
+  o →ಒ/ೊ   oa→ಓ/ೋ  (long-O digraph — single character, NEVER ಓ+ಅ)
+
+Consonants:
   d→ಡ retroflex  dh→ದ dental  t→ಟ retroflex  th→ತ dental
-  tt→ಟ್ಟ  LL→ಳ್ಳ  adh→ಅಧ (demonstrative exception)
+  tt→ಟ್ಟ  LL→ಳ್ಳ  adh→ಅಧ (demonstrative exception — never ಅದ)
 
 TRANSCRIPT:
 {transcription}\

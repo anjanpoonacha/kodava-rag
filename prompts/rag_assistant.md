@@ -55,15 +55,36 @@ Default derivation rules (apply only if no phoneme entry is retrieved):
 - Geminates are formed by halant + repeated character: `kk → ಕ್ಕ`, `LL → ಳ್ಳ`, `tt → ತ್ತ`, etc.
 
 Key phoneme mappings (defaults — retrieved phoneme entries override these):
-  oa      → ಓ          (Kannada)   ओ          (Devanagari)  — long O vowel, single character (never ಓ+ಅ); this is a structural rule
-  ea      → ಏ          (Kannada)   ए          (Devanagari)  — long E vowel, single character (never ಏ+ಅ)
-  LL / ļ  → ಳ್ಳ / ಳ   (Kannada)   ळ्ळ / ळ   (Devanagari)  — retroflex lateral
-  zh      → ಳ          (Kannada)   ळ          (Devanagari)  — retroflex approximant
-  ê       → ॅ          (Devanagari) — weak schwa, no direct Kannada equivalent
-  ng      → ಂಗ / ಂ     (Kannada)   ंग / ं     (Devanagari)  — nasal
-  'ra     → '್ರ / 'ರ   (Kannada)   '्र / 'र   (Devanagari)  — genitive suffix
-  'k      → ಕ್         (Kannada)   — dative / infinitive suffix (sante'k, mane'k, maaduw'k)
-  'l      → ಲ್         (Kannada)   — locative suffix (mane'l, sante'l)
+
+Vowels — every romanised vowel produces its Kannada character; none are ever dropped:
+  a   → ಅ/ಾ   aa  → ಆ/ಾ   i   → ಇ/ಿ   ii  → ಈ/ೀ
+  u   → ಉ/ು   uu  → ಊ/ೂ
+  e   → ಎ/ೆ   ← CRITICAL: word-final 'e' ALWAYS gets matra ೆ — never bare consonant
+               e.g. mane→ಮನೆ  katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  thenge→ತೆಂಗೆ
+  ea  → ಏ/ೇ   (long E digraph — single character, never ಏ+ಅ)
+  o   → ಒ/ೊ
+  oa  → ಓ/ೋ   (long O digraph — single character, never ಓ+ಅ)
+  ai  → ಐ/ೈ   au  → ಔ/ೌ
+
+Devanagari vowels (same rules apply):
+  a→अ  aa→आ  i→इ  ii→ई  u→उ  uu→ऊ  e→ए  ea→ए (elongated)  o→ओ  oa→ओ (elongated)
+
+Consonants — Kodava retroflex/dental (OPPOSITE of standard romanisation):
+  d   → ಡ/ड   (retroflex D)     dh  → ದ/द   (dental d — NOT ಧ/ध aspirated)
+  t   → ಟ/ट   (retroflex T)     th  → ತ/त   (dental t — NOT ಥ/थ aspirated)
+  LL/ļ→ ಳ್ಳ/ಳ (retroflex L)     zh  → ಳ/ळ   (retroflex approximant)
+  ê   → ॅ     (Devanagari weak schwa — no direct Kannada matra)
+
+Nasal clusters:
+  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ
+
+Case suffixes:
+  'ra → '್ರ/'ರ (Kannada)  '्र/'र (Devanagari) — genitive
+  'k  → ಕ್     (Kannada)  — dative / infinitive (mane'k, sante'k)
+  'l  → ಲ್     (Kannada)  — locative (mane'l, sante'l)
+
+Lexical exception — demonstrative root "adh" (that/it):
+  adh → ಅಧ/अध   (NOT ಅದ/अद — lexical form, dh→ದ rule does NOT apply here)
 
 Kannada-script queries — when the input contains Kannada Unicode characters:
 - Identify the romanised Kodava form from retrieved context

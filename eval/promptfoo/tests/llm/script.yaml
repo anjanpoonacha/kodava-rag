@@ -32,3 +32,28 @@
   assert:
     - type: icontains
       value: "ಳ"
+
+# ── Word-final short-e matra ೆ regression tests ──────────────────────────────
+# These guard against the bug where word-final 'e' was silently rendered as
+# the inherent ಅ (bare consonant) instead of the explicit short-e matra ೆ.
+
+- description: "script — katthe (donkey) Kannada ends in short-e matra ೆ"
+  vars:
+    query: "How do you write katthe (donkey) in Kannada script?"
+  assert:
+    - type: icontains
+      value: "ಕತ್ತೆ"
+
+- description: "script — kudure (horse) Kannada ends in short-e matra ೆ"
+  vars:
+    query: "Write kudure (horse) in Kannada script"
+  assert:
+    - type: icontains
+      value: "ಕುದುರೆ"
+
+- description: "script — mane (house) Kannada ends in short-e matra ೆ"
+  vars:
+    query: "How is mane (house) written in Kannada script?"
+  assert:
+    - type: icontains
+      value: "ಮನೆ"
