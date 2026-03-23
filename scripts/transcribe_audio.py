@@ -120,7 +120,9 @@ KANNADA SCRIPT CONVENTIONS
 
 Vowel mappings:
   a  → ಅ/ಾ    aa → ಆ/ಾ    i  → ಇ/ಿ    ii → ಈ/ೀ
-  u  → ಉ/ು    uu → ಊ/ೂ    e  → ಎ/ೆ
+  u  → ಉ/ು    uu → ಊ/ೂ
+  e  → ಎ/ೆ   (word-initial: standalone ಎ  |  word-medial/final: matra ೆ — NEVER dropped)
+               enne→ಎಣ್ಣೆ (initial ಎ + NN=ಣ್ಣ + final ೆ)
   ea → ಏ/ೇ   (single character — NEVER ಏ+ಅ)
   o  → ಒ/ೊ
   oa → ಓ/ೋ   (single character — NEVER ಓ+ಅ)
@@ -134,7 +136,8 @@ Consonants:
   ny→ಞ (palatal nasal — NEVER ನ+ಯ; geminate: nyny→ಞ್ಞ)
   ri→ಋ/ೃ (vocalic r in Sanskrit-origin words)
 
-Geminates:  kk→ಕ್ಕ  tt→ಟ್ಟ  LL→ಳ್ಳ  nn→ನ್ನ  mm→ಮ್ಮ  nyny→ಞ್ಞ  etc.
+Geminates:  kk→ಕ್ಕ  tt→ಟ್ಟ  LL→ಳ್ಳ  nn→ನ್ನ  NN→ಣ್ಣ  mm→ಮ್ಮ  nyny→ಞ್ಞ  etc.
+             (nn=dental n; NN=retroflex N — enne→ಎಣ್ಣೆ, kaNNu→ಕಣ್ಣು)
 Nasals:  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ  nny→ಂಞ
 
 Case suffixes:  'k→ಕ್  'l→ಲ್  'ra→್ರ
@@ -210,8 +213,9 @@ Kannada Script column — apply ALL rules:
 
 Vowels (every romanised vowel must produce its Kannada character — none are ever dropped):
   a →ಅ/ಾ   aa→ಆ/ಾ   i →ಇ/ಿ   ii→ಈ/ೀ   u →ಉ/ು   uu→ಊ/ೂ
-  e →ಎ/ೆ   ← CRITICAL: word-final 'e' ALWAYS gets matra ೆ — never a bare consonant
-             e.g. katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  mane→ಮನೆ  thenge→ತೆಂಗೆ
+  e →ಎ/ೆ   word-initial→standalone ಎ  |  word-medial/final→matra ೆ (NEVER dropped)
+             enne→ಎಣ್ಣೆ (initial ಎ + NN=ಣ್ಣ + final ೆ)
+             katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  mane→ಮನೆ  thenge→ತೆಂಗೆ
   ea→ಏ/ೇ  (long-E digraph — single character, NEVER ಏ+ಅ)
   o →ಒ/ೊ   oa→ಓ/ೋ  (long-O digraph — single character, NEVER ಓ+ಅ)
 
@@ -221,7 +225,9 @@ Consonants:
   nyny→ಞ್ಞ  (geminate: puunynye→ಪೂಞ್ಞೆ cat)
   nny→ಂಞ  (nasal+palatal: pinja→ಪಿಂಞ, minja→ಮಿಂಞ)
   ri→ಋ/ೃ  (vocalic r: krutagnate→ಕೃತಜ್ಞತೆ gratitude)
-  tt→ಟ್ಟ  LL→ಳ್ಳ  adh→ಅಧ (demonstrative exception — never ಅದ)
+  tt→ಟ್ಟ  LL→ಳ್ಳ  NN→ಣ್ಣ  (retroflex N geminate: enne→ಎಣ್ಣೆ oil, kaNNu→ಕಣ್ಣು eye)
+  nn→ನ್ನ  (dental n geminate — DIFFERENT from NN retroflex)
+  adh→ಅಧ (demonstrative exception — never ಅದ)
 
 TRANSCRIPT:
 {transcription}\

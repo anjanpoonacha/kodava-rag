@@ -31,17 +31,23 @@ always requires an explicit matra in the script.
   ────────┼────────────┼───────────────────────┼─────────────────────────
   ê       │ (ಎ̈)        │ ೆ̈                     │ a in about (schwa — rare)
 
-CRITICAL — word-final 'e' rule:
-  A Kodava word ending in 'e' MUST end in the short-e matra ೆ in Kannada.
-  The bare consonant form (no matra) is WRONG — it silently inserts ಅ.
+CRITICAL — 'e' vowel rules (all positions):
 
-  CORRECT:   mane   → ಮನೆ      (NOT ಮನ)
-             katthe → ಕತ್ತೆ    (NOT ಕತ್ತ)
-             kudure → ಕುದುರೆ   (NOT ಕುದುರ)
-             thenge → ತೆಂಗೆ    (NOT ತೆಂಗ)
-             chatthe→ ಚತ್ತೆ    (NOT ಚತ್ತ)
-             raste  → ರಾಸ್ತೆ   (NOT ರಾಸ್ತ)
-             baale  → ಬಾಳೆ     (NOT ಬಾಳ)
+  Word-initial 'e' → standalone character ಎ (never a matra)
+  Word-medial 'e'  → matra ೆ on the preceding consonant
+  Word-final 'e'   → matra ೆ on the final consonant — NEVER dropped or bare
+
+  Full example — enne (oil): e + NN + e = ಎ + ಣ್ಣ + ೆ = ಎಣ್ಣೆ
+    initial 'e' → standalone ಎ
+    medial NN   → retroflex geminate ಣ್ಣ (see geminates below)
+    final 'e'   → matra ೆ
+
+  More examples:
+    mane   → ಮನೆ      (final e → ೆ; NOT ಮನ)
+    katthe → ಕತ್ತೆ    (final e → ೆ; NOT ಕತ್ತ)
+    kudure → ಕುದುರೆ   (final e → ೆ; NOT ಕುದುರ)
+    thenge → ತೆಂಗೆ    (initial th=ತ, medial e=ೆ, final e=ೆ)
+    enne   → ಎಣ್ಣೆ    (initial e=ಎ, NN=ಣ್ಣ, final e=ೆ)
 
 Digraph rules — each digraph is ONE sound, ONE Kannada character:
   ea → ಏ/ೇ   (long E — NEVER ಏ+ಅ or ಎ+ಅ)
@@ -80,8 +86,10 @@ Retroflex series:
 Geminates (halant + repeated character):
   kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ
   tt→ಟ್ಟ   dd→ಡ್ಡ  DD→ಡ್ಡ   thth→ತ್ತ  dhdh→ದ್ದ
-  nn→ನ್ನ  mm→ಮ್ಮ  ll→ಲ್ಲ   LL→ಳ್ಳ   rr→ರ್ರ
-  ss→ಸ್ಸ   pp→ಪ್ಪ   bb→ಬ್ಬ  nyy→ಞ್ಞ
+  nn→ನ್ನ  NN→ಣ್ಣ  mm→ಮ್ಮ  ll→ಲ್ಲ   LL→ಳ್ಳ   rr→ರ್ರ
+  ss→ಸ್ಸ   pp→ಪ್ಪ   bb→ಬ್ಬ  nyny→ಞ್ಞ
+  NOTE: nn→ನ್ನ (dental n) ≠ NN→ಣ್ಣ (retroflex N)
+        enne→ಎಣ್ಣೆ (oil)  kaNNu→ಕಣ್ಣು (eye)  poNNa→ಪೊಣ್ಣ (girl)
 
 Nasal clusters:
   nd  → ಂಡ   (nasal + retroflex D)
@@ -131,6 +139,8 @@ EXAMPLES
   kudure     → ಕುದುರೆ     (d=ಡ, final e → ೆ)
   thenge     → ತೆಂಗೆ      (th=ತ, ng=ಂಗ, final e → ೆ)
   chatthe    → ಚತ್ತೆ      (ch=ಚ, tt=ಟ್ಟ, final e → ೆ)
+  enne       → ಎಣ್ಣೆ     (initial e=ಎ standalone, NN=ಣ್ಣ retroflex geminate, final e=ೆ)
+  kaNNu      → ಕಣ್ಣು    (N=ಣ retroflex, NN=ಣ್ಣ geminate)
   puunynye   → ಪೂಞ್ಞೆ    (ny=ಞ palatal nasal, nyny=ಞ್ಞ geminate, final e → ೆ)
   kunji      → ಕುಞ್ಞಿ    (nyny=ಞ್ಞ geminate — NOT ಕುಂಞಿ, no anusvara)
   koadu      → ಕೋಡ್       (oa=ಓ, d=ಡ retroflex)

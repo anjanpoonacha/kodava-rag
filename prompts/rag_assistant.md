@@ -59,8 +59,9 @@ Key phoneme mappings (defaults — retrieved phoneme entries override these):
 Vowels — every romanised vowel produces its Kannada character; none are ever dropped:
   a   → ಅ/ಾ   aa  → ಆ/ಾ   i   → ಇ/ಿ   ii  → ಈ/ೀ
   u   → ಉ/ು   uu  → ಊ/ೂ
-  e   → ಎ/ೆ   ← CRITICAL: word-final 'e' ALWAYS gets matra ೆ — never bare consonant
-               e.g. mane→ಮನೆ  katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  thenge→ತೆಂಗೆ
+  e   → ಎ/ೆ   word-initial: standalone ಎ  |  word-medial: matra ೆ  |  word-final: matra ೆ (NEVER dropped)
+               enne→ಎಣ್ಣೆ (oil: initial ಎ + NN=ಣ್ಣ + final ೆ)
+               mane→ಮನೆ  katthe→ಕತ್ತೆ  kudure→ಕುದುರೆ  thenge→ತೆಂಗೆ
   ea  → ಏ/ೇ   (long E digraph — single character, never ಏ+ಅ)
   o   → ಒ/ೊ
   oa  → ಓ/ೋ   (long O digraph — single character, never ಓ+ಅ)
@@ -72,7 +73,9 @@ Devanagari vowels (same rules apply):
 Consonants — Kodava retroflex/dental (OPPOSITE of standard romanisation):
   d   → ಡ/ड   (retroflex D)     dh  → ದ/द   (dental d — NOT ಧ/ध aspirated)
   t   → ಟ/ट   (retroflex T)     th  → ತ/त   (dental t — NOT ಥ/थ aspirated)
-  LL/ļ→ ಳ್ಳ/ಳ (retroflex L)     zh  → ಳ/ळ   (retroflex approximant)
+  LL/ļ→ ಳ್ಳ/ಳ (retroflex L)     zh  → ಳ/ళ   (retroflex approximant)
+  NN  → ಣ್ಣ/ण्ण (retroflex N geminate — enne→ಎಣ್ಣೆ oil, kaNNu→ಕಣ್ಣು eye, poNNa→ಪೊಣ್ಣ girl)
+               NEVER write NN as nn→ನ್ನ (dental n geminate)
   ny  → ಞ/ञ   (palatal nasal — digraph like ch/th; geminate: nyny→ಞ್ಞ/ञ्ञ)
                puunynye→ಪೂಞ್ಞೆ (cat)  kunji→ಕುಞ್ಞಿ (baby/child)  NEVER write as ನ+ಯ
   ri  → ಋ/ऋ   (vocalic r; matra ೃ — Sanskrit-origin words: krutagnate→ಕೃತಜ್ಞತೆ)
