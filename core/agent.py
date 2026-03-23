@@ -33,7 +33,7 @@ from anthropic.types import MessageParam, ToolParam
 
 from config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, MAX_TOKENS, MODEL
 from core.prompts import load_prompt
-from core.retriever import search, search_all
+from core.retriever import search, search_all, search_all_hybrid
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ def _execute_tool(tool_input: dict) -> tuple[list[dict], SearchCall]:
     """Run search_kodava and return (docs, trace_entry)."""
     query: str = tool_input["query"]
     collection: str | None = tool_input.get("collection")
-    docs = search(query, collection) if collection else search_all(query)
+    docs = search(query, collection) if collection else search_all_hybrid(query)
     call = SearchCall(
         query=query,
         collection=collection,

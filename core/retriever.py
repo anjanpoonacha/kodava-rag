@@ -385,6 +385,42 @@ def _rrf_merge(
     return [docs_by_id[did] for did in ranked_ids[:top_k]]
 
 
+def search_all_hybrid(query: str) -> list[dict]:
+    """Synchronous hybrid BM25 + dense retrieval with RRF merge.
+
+    Runs BM25 and the embedding API call concurrently via ThreadPoolExecutor,
+    then merges both ranked lists using Reciprocal Rank Fusion.
+
+    Falls back to BM25-only results when:
+    - EMBED_ENABLED=false
+    - embeddings.npy not built yet
+    - embedding API call fails (embed_one returns None)
+
+    Safe to call from synchronous contexts (WSGI, agent loop, evals).
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from core.embedder import embed_one
+    from core.vector_index import load as load_index
+    from config import TOP_K
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        bm25_future = pool.submit(search_all, query)
+        embed_future = pool.submit(embed_one, query)
+        bm25_results = bm25_future.result()
+        query_vec = embed_future.result()
+
+    if query_vec is None:
+        return bm25_results
+
+    idx = load_index()
+    if idx is None:
+        return bm25_results
+
+    dense_results = idx.search(query_vec, top_k=TOP_K)
+    return _rrf_merge(bm25_results, dense_results, top_k=TOP_K)
+
+
 async def search_all_async(query: str) -> list[dict]:
     """Hybrid BM25 + dense retrieval with RRF merge.
 

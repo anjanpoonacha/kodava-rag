@@ -9,13 +9,9 @@ mode: subagent
 temperature: 0.2
 permission:
   edit: allow
-  bash:
-    "*": ask
-    "promptfoo eval*": allow
-    "promptfoo view*": allow
-    "cat eval/*": allow
-    "ls eval/*": allow
+  bash: allow
   webfetch: allow
+  task: deny
 ---
 
 <role>
