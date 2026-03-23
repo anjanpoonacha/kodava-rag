@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from config import DATA, EMBED_ENABLED, EMBED_MODEL
 from core.github_sync import sync_source_files
-import ingesters.corpus_jsonl  # noqa: F401 — registers CorpusJsonlIngester (thakk/corpus)
+import ingesters.corpus_md  # noqa: F401 — registers CorpusMdIngester (thakk/corpus/*.md)
 import ingesters.vocab_table  # noqa: F401 — registers VocabTableIngester
 import ingesters.corrections  # noqa: F401 — registers CorrectionsIngester
 import ingesters.phoneme_map  # noqa: F401 — registers PhonemeMapIngester
@@ -46,7 +46,7 @@ SENTENCE_NARRATIVE = CORPUS / "sentences_narrative.jsonl"
 def _load_existing_sentences() -> tuple[list[dict], set[str]]:
     """Load hand-verified sentences preserved across builds.
 
-    Excludes any entry whose ID already exists in data/thakk/corpus/sentences.jsonl
+    Excludes any entry whose ID already exists in data/thakk/corpus/sentences.md
     so that edits to thakk-sourced sentences are not silently blocked by stale
     preserved copies in data/corpus/sentences.jsonl.
     """
@@ -56,11 +56,28 @@ def _load_existing_sentences() -> tuple[list[dict], set[str]]:
     if not path.exists():
         return entries, ids
 
-    # IDs that will be re-ingested from thakk — let thakk win
+    # IDs that will be re-ingested from thakk — let thakk win.
+    # Read from the new .md source; fall back to .jsonl if present (transition period).
     thakk_ids: set[str] = set()
-    thakk_sentences = THAKK / "corpus" / "sentences.jsonl"
-    if thakk_sentences.exists():
-        for line in thakk_sentences.read_text(encoding="utf-8").splitlines():
+    thakk_sentences_md = THAKK / "corpus" / "sentences.md"
+    thakk_sentences_jsonl = THAKK / "corpus" / "sentences.jsonl"
+
+    if thakk_sentences_md.exists():
+        import re as _re
+
+        for line in thakk_sentences_md.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if (
+                not line
+                or not line.startswith("|")
+                or _re.match(r"^\s*\|[-: |]+\|\s*$", line)
+            ):
+                continue
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if cells and cells[0] and cells[0].lower() not in ("id", ""):
+                thakk_ids.add(cells[0])
+    elif thakk_sentences_jsonl.exists():
+        for line in thakk_sentences_jsonl.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line:
                 try:
@@ -120,10 +137,10 @@ def build():
                     buckets[entry.type].append(entry.to_dict())
             break  # only first matching ingester per file
 
-    # Pass 1 — curated corpus JSONL first so they claim their IDs in `seen`
-    # before any derived/audio-vocab sources can produce the same entry with
-    # stale (empty) fields.
-    for path in sorted((THAKK / "corpus").glob("*.jsonl")):
+    # Pass 1 — curated corpus Markdown tables first so they claim their IDs
+    # in `seen` before any derived/audio-vocab sources can produce the same
+    # entry with stale (empty) fields.
+    for path in sorted((THAKK / "corpus").glob("*.md")):
         if path.is_file():
             _ingest_path(path)
 
@@ -131,7 +148,7 @@ def build():
     for path in sorted(THAKK.rglob("*")):
         if not path.is_file() or ".git" in path.parts:
             continue
-        if path.parent == THAKK / "corpus" and path.suffix == ".jsonl":
+        if path.parent == THAKK / "corpus" and path.suffix == ".md":
             continue  # already processed in pass 1
         _ingest_path(path)
 
