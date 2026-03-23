@@ -56,6 +56,17 @@ Standard consonants:
   n→ನ  p→ಪ  b→ಬ  m→ಮ
   y→ಯ  r→ರ  l→ಲ  v/w→ವ  s→ಸ  h→ಹ
 
+Palatal nasal — the 'ny' digraph:
+  ny   → ಞ    (palatal nasal — like 'ny' in canyon, mañana)
+  nyny → ಞ್ಞ  (geminate — puunynye → ಪೂಞ್ಞೆ, cat)
+          kunji→ಕುಂಞಿ  minja→ಮಿಂಞ  pinja→ಪಿಂಞ  njandu→ಞಂಡು (crab)
+  NEVER write ny as ನ+ಯ — ಞ is a single character
+  NEVER write puunynye as ಪೂಂಜೆ — ಂಜ is nasal+j, not the palatal nasal
+
+Vocalic r (Sanskrit-origin words):
+  ri  → ಋ/ೃ  (matra form ೃ in CV syllable)
+          krutagnate → ಕೃತಜ್ಞತೆ  (gratitude = kru+ta+gny+a+te)
+
 CRITICAL — Kodava retroflex vs dental (OPPOSITE of standard romanisation):
   d   → ಡ   (retroflex D — NOT ದ dental, NOT ಧ aspirated)
   dh  → ದ   (dental d    — NOT ಧ aspirated)
@@ -69,7 +80,7 @@ Geminates (halant + repeated character):
   kk→ಕ್ಕ  gg→ಗ್ಗ  chch→ಚ್ಚ  jj→ಜ್ಜ
   tt→ಟ್ಟ   dd→ಡ್ಡ  DD→ಡ್ಡ   thth→ತ್ತ  dhdh→ದ್ದ
   nn→ನ್ನ  mm→ಮ್ಮ  ll→ಲ್ಲ   LL→ಳ್ಳ   rr→ರ್ರ
-  ss→ಸ್ಸ   pp→ಪ್ಪ   bb→ಬ್ಬ
+  ss→ಸ್ಸ   pp→ಪ್ಪ   bb→ಬ್ಬ  nyy→ಞ್ಞ
 
 Nasal clusters:
   nd  → ಂಡ   (nasal + retroflex D)
@@ -79,6 +90,7 @@ Nasal clusters:
   ng  → ಂಗ   (nasal + g)
   mb  → ಂಬ   (nasal + b)
   nj  → ಂಜ   (nasal + j)
+  nny → ಂಞ   (nasal + palatal nasal ಞ: pinja→ಪಿಂಞ, minja→ಮಿಂಞ, inyoo→ಇಂಞೂ)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LEXICAL EXCEPTIONS
@@ -118,6 +130,8 @@ EXAMPLES
   kudure     → ಕುದುರೆ     (d=ಡ, final e → ೆ)
   thenge     → ತೆಂಗೆ      (th=ತ, ng=ಂಗ, final e → ೆ)
   chatthe    → ಚತ್ತೆ      (ch=ಚ, tt=ಟ್ಟ, final e → ೆ)
+  puunynye   → ಪೂಞ್ಞೆ    (ny=ಞ palatal nasal, nyny=ಞ್ಞ geminate, final e → ೆ)
+  kunji      → ಕುಂಞಿ     (ny=ಞ, nasal cluster ಂ before ಞ)
   koadu      → ಕೋಡ್       (oa=ಓ, d=ಡ retroflex)
   keaLu      → ಕೇಳ್       (ea=ಏ, L=ಳ retroflex)
 

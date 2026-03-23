@@ -131,9 +131,11 @@ Consonants:
   t→ಟ  (retroflex)         d→ಡ  (retroflex)
   n→ನ  N→ಣ  p→ಪ  b→ಬ  m→ಮ  y→ಯ  r→ರ  l→ಲ  v/w→ವ  s→ಸ  h→ಹ
   zh/ḷ/L→ಳ (retroflex lateral)
+  ny→ಞ (palatal nasal — NEVER ನ+ಯ; geminate: nyny→ಞ್ಞ)
+  ri→ಋ/ೃ (vocalic r in Sanskrit-origin words)
 
-Geminates:  kk→ಕ್ಕ  tt→ಟ್ಟ  LL→ಳ್ಳ  nn→ನ್ನ  mm→ಮ್ಮ  etc.
-Nasals:  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ
+Geminates:  kk→ಕ್ಕ  tt→ಟ್ಟ  LL→ಳ್ಳ  nn→ನ್ನ  mm→ಮ್ಮ  nyny→ಞ್ಞ  etc.
+Nasals:  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ  nny→ಂಞ
 
 Case suffixes:  'k→ಕ್  'l→ಲ್  'ra→್ರ
 
@@ -215,6 +217,10 @@ Vowels (every romanised vowel must produce its Kannada character — none are ev
 
 Consonants:
   d→ಡ retroflex  dh→ದ dental  t→ಟ retroflex  th→ತ dental
+  ny→ಞ  (palatal nasal — NEVER ನ+ಯ)
+  nyny→ಞ್ಞ  (geminate: puunynye→ಪೂಞ್ಞೆ cat)
+  nny→ಂಞ  (nasal+palatal: pinja→ಪಿಂಞ, minja→ಮಿಂಞ)
+  ri→ಋ/ೃ  (vocalic r: krutagnate→ಕೃತಜ್ಞತೆ gratitude)
   tt→ಟ್ಟ  LL→ಳ್ಳ  adh→ಅಧ (demonstrative exception — never ಅದ)
 
 TRANSCRIPT:

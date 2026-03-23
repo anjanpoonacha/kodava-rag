@@ -73,10 +73,13 @@ Consonants — Kodava retroflex/dental (OPPOSITE of standard romanisation):
   d   → ಡ/ड   (retroflex D)     dh  → ದ/द   (dental d — NOT ಧ/ध aspirated)
   t   → ಟ/ट   (retroflex T)     th  → ತ/त   (dental t — NOT ಥ/थ aspirated)
   LL/ļ→ ಳ್ಳ/ಳ (retroflex L)     zh  → ಳ/ळ   (retroflex approximant)
+  ny  → ಞ/ञ   (palatal nasal — digraph like ch/th; geminate: nyny→ಞ್ಞ/ञ्ञ)
+               puunynye→ಪೂಞ್ಞೆ (cat)  kunji→ಕುಂಞಿ (baby)  NEVER write as ನ+ಯ
+  ri  → ಋ/ऋ   (vocalic r; matra ೃ — Sanskrit-origin words: krutagnate→ಕೃತಜ್ಞತೆ)
   ê   → ॅ     (Devanagari weak schwa — no direct Kannada matra)
 
 Nasal clusters:
-  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ
+  nd→ಂಡ  ndh→ಂದ  nt→ಂಟ  nth→ಂತ  ng→ಂಗ  mb→ಂಬ  nny→ಂಞ
 
 Case suffixes:
   'ra → '್ರ/'ರ (Kannada)  '्र/'र (Devanagari) — genitive
