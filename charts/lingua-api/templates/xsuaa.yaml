@@ -1,0 +1,46 @@
+apiVersion: services.cloud.sap.com/v1
+kind: ServiceInstance
+metadata:
+  name: {{ .Values.xsuaa.instanceName }}
+  namespace: {{ include "lingua-api.namespace" . }}
+  labels:
+    app: lingua-api
+    app.kubernetes.io/managed-by: Helm
+spec:
+  externalName: {{ .Values.xsuaa.instanceName }}
+  serviceOfferingName: xsuaa
+  servicePlanName: application
+  parameters:
+    xsappname: {{ .Values.xsuaa.xsappname }}
+    tenant-mode: dedicated
+    oauth2-configuration:
+      grant-types:
+        - authorization_code
+      redirect-uris:
+        - {{ .Values.xsuaa.redirectUri }}
+    scopes:
+      - name: $XSAPPNAME.User
+        description: lingua-api User
+    role-templates:
+      - name: User
+        description: lingua-api User Access
+        scope-references:
+          - $XSAPPNAME.User
+    role-collections:
+      - name: lingua-api Users
+        role-template-references:
+          - $XSAPPNAME.User
+---
+apiVersion: services.cloud.sap.com/v1
+kind: ServiceBinding
+metadata:
+  name: {{ .Values.xsuaa.bindingName }}
+  namespace: {{ include "lingua-api.namespace" . }}
+  labels:
+    app: lingua-api
+    app.kubernetes.io/managed-by: Helm
+spec:
+  externalName: {{ .Values.xsuaa.bindingName }}
+  serviceInstanceName: {{ .Values.xsuaa.instanceName }}
+  secretName: {{ .Values.xsuaa.bindingName }}
+  secretKey: credentials

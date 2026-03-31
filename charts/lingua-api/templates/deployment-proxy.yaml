@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sap-ai-proxy
+  namespace: {{ include "lingua-api.namespace" . }}
+  labels:
+    app: sap-ai-proxy
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sap-ai-proxy
+  template:
+    metadata:
+      labels:
+        app: sap-ai-proxy
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecret }}
+      containers:
+        - name: proxy
+          image: {{ include "lingua-api.image" (dict "values" .Values.proxy "root" .) }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.proxy.port }}
+          env:
+            - name: AICORE_BINDING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.proxy.secrets.aicoreBinding }}
+                  key: credentials
+            - name: API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.proxy.secrets.proxyConfig }}
+                  key: API_KEYS
+            - name: LOG_LEVEL
+              value: warn
+            - name: ANTHROPIC_ENABLE_PROMPT_CACHING
+              value: "true"
+            - name: AI_CLIENT_TYPE
+              value: lingua-api
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.proxy.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.proxy.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: {{ .Values.proxy.resources.requests.memory }}
+              cpu: {{ .Values.proxy.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.proxy.resources.limits.memory }}
+              cpu: {{ .Values.proxy.resources.limits.cpu }}
