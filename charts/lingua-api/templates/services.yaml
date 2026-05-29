@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lingua-api
+  namespace: {{ include "lingua-api.namespace" . }}
+  labels:
+    app: lingua-api
+spec:
+  type: ClusterIP
+  selector:
+    app: lingua-api
+  ports:
+    - name: approuter
+      port: {{ .Values.approuter.port }}
+      targetPort: {{ .Values.approuter.port }}
+      protocol: TCP
+    - name: http
+      port: {{ .Values.app.port }}
+      targetPort: {{ .Values.app.port }}
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sap-ai-proxy
+  namespace: {{ include "lingua-api.namespace" . }}
+  labels:
+    app: sap-ai-proxy
+spec:
+  type: ClusterIP
+  selector:
+    app: sap-ai-proxy
+  ports:
+    - port: {{ .Values.proxy.port }}
+      targetPort: {{ .Values.proxy.port }}
+      protocol: TCP

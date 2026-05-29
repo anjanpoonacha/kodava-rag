@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lingua-api-approuter
+  namespace: {{ include "lingua-api.namespace" . }}
+  labels:
+    app: lingua-api
+    app.kubernetes.io/managed-by: Helm
+data:
+  xs-app.json: |
+    {
+      "authenticationMethod": "route",
+      "sessionTimeout": 60,
+      "compression": {
+        "enabled": false
+      },
+      "routes": [
+        {
+          "source": "^(.*)$",
+          "target": "$1",
+          "destination": "lingua-api-backend",
+          "authenticationType": "xsuaa",
+          "csrfProtection": false
+        }
+      ],
+      "logout": {
+        "logoutEndpoint": "/logout"
+      }
+    }
